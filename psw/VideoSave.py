@@ -15,7 +15,7 @@ while 1:
 
     # 저장할 경로와 파일 이름을 지정합니다.
     now = datetime.datetime.now()
-    save_path = "/home/pi/2team/videos"
+    save_path = "videos"
     filename = now.strftime("%Y%m%d_%H%M%S") + ".avi"
 
     # 경로가 존재하지 않으면 생성합니다.

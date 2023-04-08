@@ -10,6 +10,9 @@ def button(channel):
     dir_path = "videos"
     cut_path = "ShockVideos"
 
+    # 작업중인 디렉토리 변경
+    os.chdir("/home/pi/2team/psw")
+
     # 디렉토리 내 모든 파일과 디렉토리의 이름을 얻습니다.
     file_list = os.listdir(dir_path)
 
@@ -28,15 +31,12 @@ def button(channel):
     # 비디오 클립 객체 생성
     video = VideoFileClip(os.path.join(dir_path, recent_file_name))
 
-    # 비디오의 총 길이
-    total_duration = video.duration
-
-    # 비디오 끝부분 길이
-    end_duration = total_duration - video.duration
+    # 동영상의 총 길이(초) 계산
+    total_seconds = video.duration
 
     # 자를 시작 시간과 끝 시간
-    start_time = end_duration - 10  # 초
-    end_time = end_duration  # 초
+    start_time = total_seconds - 10  # 초
+    end_time = total_seconds  # 초
 
     # 자를 부분 추출
     cut_video = video.subclip(start_time, end_time)
