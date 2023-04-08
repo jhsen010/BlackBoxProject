@@ -45,6 +45,10 @@ def button(channel):
     filename = now.strftime("%Y%m%d_%H%M%S") + ".avi"
 
     # 자른 비디오 파일 저장
+    # moviepy를 사용해 동영상을 저장할때는 꼭 코덱 설정을 해줘야 한다
+    # 코덱 설정을 안해주면 이상한 디렉토리가 맞지 않는다고 나오거나
+    # keyerror: codec
+    # 2개중에 무슨 에러가 나올지 모름
     cut_video.write_videofile(os.path.join(cut_path, filename), codec="libx264")
 
 
