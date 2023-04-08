@@ -48,13 +48,15 @@ def button(channel):
     cut_video.write_videofile(os.path.join(cut_path, filename), codec="libx264")
 
 
-IO.setmode(IO.BCM)
-IO.setwarnings(False)
-button_pin = 14
+button(1)
 
-IO.setup(button_pin, IO.IN, pull_up_down=IO.PUD_DOWN)
+# IO.setmode(IO.BCM)
+# IO.setwarnings(False)
+# button_pin = 14
 
-IO.add_event_detect(button_pin, IO.RISING, callback=button, bouncetime=300)
+# IO.setup(button_pin, IO.IN, pull_up_down=IO.PUD_DOWN)
 
-while 1:
-    time.sleep(0.1)
+# IO.add_event_detect(button_pin, IO.RISING, callback=button, bouncetime=300)
+
+# while 1:
+#     time.sleep(0.1)
