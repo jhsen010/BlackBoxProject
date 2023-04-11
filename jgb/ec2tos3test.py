@@ -7,7 +7,7 @@ bucket = s3.Bucket(bucket_name)
 
 # 파일 업로드하기
 local_file ='/home/ubuntu/ec2tos3test.txt'
-obj_file = 'normalvideo/ec2tos3test.txt'   # S3 에 올라갈 파일명
+obj_file = 'normalvideo/ec2tos30411.txt'   # S3 에 올라갈 파일명
 bucket.upload_file(local_file , obj_file)
 
 
