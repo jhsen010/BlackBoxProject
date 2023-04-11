@@ -33,7 +33,7 @@ while 1:
 
     # 지정한 시간(초) 동안 비디오를 캡처하고 저장합니다.
     start_time = time.time()
-    while (time.time() - start_time) < 30:  # 30초 동안 캡처합니다.
+    while (time.time() - start_time) < 300:  # 30초 동안 캡처합니다.
         ret, frame = cap.read()  # 영상을 캡처합니다.
 
         # 캡처된 영상을 저장합니다.
