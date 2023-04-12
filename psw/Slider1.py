@@ -35,6 +35,7 @@ prevTime = time.time()  # 이전에 측정된 시간
 
 
 #
+#
 # 회전속도 변화 0~100 사이의 값
 def set_motor_speed(speed):
     # 음수가 들어오는 것을 방지하기 위해 abs()함수 사용
