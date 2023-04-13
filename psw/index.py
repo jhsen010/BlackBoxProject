@@ -1,40 +1,40 @@
-from flask import Flask, render_template, request
 import requests
 import os
+import time
 
 os.chdir("/home/pi/2team/psw")
 
-app = Flask(__name__, template_folder="./templates")
+url_video = "http://43.201.154.195:5000/normalvideo/upload"
+video_dir = "videos"
 
+# 이전에 보낸 비디오 파일 목록 가져오기
+prev_video_files = [
+    os.path.join(video_dir, f) for f in os.listdir(video_dir) if f.endswith(".mp4")
+]
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+while True:
+    # 전송하기전 6분14초간 기다림
+    # time.sleep(374)
 
-
-@app.route("/send", methods=["POST"])
-def send_data():
-    url = "http://43.201.154.195:5000/sensor/select"
-    video_dir = "videos"
-    video_files = [
-        os.path.join(video_dir, f) for f in os.listdir(video_dir) if f.endswith(".mp4")
+    # 새 비디오 파일 목록 가져오기
+    new_video_files = [
+        os.path.join(video_dir, f)
+        for f in os.listdir(video_dir)
+        if f.endswith(".mp4") and f not in prev_video_files
     ]
 
-    for video_file in video_files:
+    # 중복되지 않은 비디오 파일만 업로드
+    for video_file in new_video_files:
         file_name = os.path.basename(video_file)
-        video = {"file": open(video_file, "rb")}
-        response = requests.post(url, files=video)
-    return "Data has been sent!"
+        video = {"normalvideo": open(video_file, "rb")}
+        response = requests.post(url_video, files=video)
+        print(f"{file_name} uploaded. Server response: {response.text}")
 
+        # 업로드한 비디오 파일을 이전에 업로드한 비디오 파일 목록에 추가
+        prev_video_files.append(file_name)
 
-@app.route("/favicon.ico")
-def favicon():
-    return ""
+    time.sleep(374)
 
-
-import logging
-
-logging.basicConfig(filename="app.log", level=logging.DEBUG)
-
-if __name__ == "__main__":
-    app.run()
+    # 통신 결과 및 내용 확인용
+    print(response.status_code)
+    print(response.text)

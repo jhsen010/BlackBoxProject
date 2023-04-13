@@ -1,6 +1,10 @@
 import spidev
 import time
 import RPi.GPIO as IO
+import requests
+import json
+import datetime
+import os
 
 # SPI 인스턴스 spi생성
 spi = spidev.SpiDev()
@@ -72,6 +76,18 @@ def encoderB(channel):
         encoderPos += 1
 
 
+def change_motor_speed(axel_value, break_value):
+    # axel_value와 break_value의 평균 값을 구하고 1023으로 나누어 비율 값으로 변환
+    ratio = (axel_value - break_value) / (2 * 1023)
+    # 모터의 최대 속도는 100으로 가정
+    if ratio < 0:
+        speed = 0
+    else:
+        speed = ratio * 100
+    # 모터의 속도 변경
+    set_motor_speed(speed)
+
+
 IO.add_event_detect(encPinA, IO.BOTH, callback=encoderA)
 IO.add_event_detect(encPinB, IO.BOTH, callback=encoderB)
 
@@ -83,8 +99,7 @@ try:
         print("------------------------")
         print(f"axel_Value: {axel_value}    break_Value: {break_value}")
 
-        # 모터 최대속도의 50%로 회전
-        set_motor_speed(50)
+        change_motor_speed(axel_value, break_value)
 
         currTime = time.time()
         elapsedTime = currTime - prevTime  # 이전 측정 시간으로부터 현재까지의 경과시간
@@ -92,7 +107,8 @@ try:
 
         # elapsedTime에 360.0을 곱해주어 초를 분으로 변환
         rpm = deltaEncoder / (elapsedTime * 360.0) * 60
-        print(f"RPM: {rpm}")
+        hour = rpm / 2
+        print(f"RPM: {rpm}  시속:{hour}")
 
         # 이전 측정 시간과 이전 엔코더 위치를 저장해 둠으로써
         # 다음 측정 시간에서 현재 측정된 시간과 엔코더 위치의 차이를
@@ -100,6 +116,21 @@ try:
         # 이전 값과 현재 값을 비교하면서 변화를 측정하는 것을 센서값의 미분이라고 함
         prevTime = currTime
         prevEncoderPos = encoderPos
+
+        now = datetime.datetime.now()
+        strnow = now.strftime("%Y%m%d_%H%M%S")
+        url = "http://43.201.154.195:5000/sensor/insert"
+        data = {
+            "strdate": strnow,
+            "straccel": str(axel_value),
+            "strbreak": str(break_value),
+            "intspeed": hour,
+        }
+
+        headers = {"Content-type": "application/json"}
+        data_json = json.dumps(data)
+
+        response = requests.post(url, data=data_json, headers=headers)
 
         time.sleep(0.1)
 
