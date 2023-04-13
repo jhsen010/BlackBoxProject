@@ -43,6 +43,11 @@ def gen(strlocal):
 strlocal = "/home/ubuntu/videostreaming/streamingvideo.mp4"
 
 
+@app.route("/videowatch")
+def video_feed():
+    return Response(gen(strlocal), mimetype="video/mp4")
+
+
 @api.route("/hello")  # 데코레이터 이용, '/hello' 경로에 클래스 등록
 class HelloWorld(Resource):
     def get(self):  # GET 요청시 리턴 값에 해당 하는 dict를 JSON 형태로 반환
@@ -91,16 +96,42 @@ class select(Resource):
             cursor.execute("SELECT * FROM sensor")
             records = cursor.fetchall()
             # return str(records)
-            return jsonify(records)
-        except Exception as e:
-            print("Error selecting record.")
-            print(e)
-            return "Error selecting record."
+
+            # return jsonify(records)
+
+            # result_str = (
+            #     str(records)
+            #     .replace("[", "")
+            #     .replace("]", "")
+            #     .replace("(", "")
+            #     .replace(")", "")
+            # )
+            # # print(result_str)
+            # return result_str
+
+            data = []
+            for row in records:
+                obj = {}
+                obj["ID"] = row[0]
+                obj["date"] = row[1]
+                obj["accel"] = row[2]
+                obj["break"] = row[3]
+                obj["speed"] = row[4]
+                data.append(obj)
+
+            return jsonify(data)
+
+        # except Exception as e:
+        #     print("Error selecting record.")
+        #     print(e)
+        #     return "Error selecting record."
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to find data into MySQL table: {error}")
+            return f"Failed to find data into MySQL table: {error}"
 
 
-@api.route(
-    "/findnormal/videodate", methods=["POST"]
-)  # 데이터베이스에 검색결과있으면 s3에서 영상 videostreaming에 다운받아서 영상 스트리밍 사이트 열고 링크 리턴해주기
+@api.route("/normalvideo/watch", methods=["POST"])
 class selectnormal(Resource):
     def post(self):
         try:
@@ -131,19 +162,14 @@ class selectnormal(Resource):
                 os.remove(file_path)  # 파일 삭제
 
         s3r.Bucket("mobles3").download_file(
-            "normalvideo/" + strvideodate + ".mp4",
+            "normalvideo/" + strvideodate,
             strlocal,
         )
 
         return "http://43.201.154.195:5000/videowatch"
 
 
-@app.route("/videowatch")
-def video_feed():
-    return Response(gen(strlocal), mimetype="video/mp4")
-
-
-@api.route("/findcrash/videodate", methods=["POST"])
+@api.route("/crashvideo/watch", methods=["POST"])
 class selectcrash(Resource):
     def post(self):
         try:
@@ -172,11 +198,13 @@ class normalvideo(Resource):
         try:
             # 업로드된 파일 ec2에 저장
             file = request.files["normalvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
+
             file.save("/home/ubuntu/videoupload/" + file.filename)
+            print(file.filename)
 
             # 파일 ec2에서 s3로 업로드하기
             local_file = "/home/ubuntu/videoupload/" + file.filename
-            obj_file = "videoupload/" + file.filename  # S3 에 올라갈 파일명
+            obj_file = "normalvideo/" + file.filename  # S3 에 올라갈 파일명
             bucket.upload_file(local_file, obj_file)
 
             file_path = "/home/ubuntu/videoupload/" + file.filename
@@ -185,7 +213,7 @@ class normalvideo(Resource):
 
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO camera_normal videodate VALUES ('%s')" % file.filename
+                "INSERT INTO camera_normal (videodate) VALUES ('%s')" % file.filename
             )
             cursor.execute("ALTER TABLE camera_normal AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
             cursor.execute("SET @COUNT = 0;")
@@ -194,12 +222,16 @@ class normalvideo(Resource):
             )  # ID순서 꼬인거 풀기
             conn.commit()
 
-            # 파일 업로드 성공시 메시지 반환
+            # # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
-        except Exception as e:
-            print("Error uploading file.")
-            print(e)
-            return jsonify({"message": "File upload failed"})
+        # except Exception as e:
+        #     print("Error uploading file.")
+        #     print(e)
+        #     return jsonify({"message": "File upload failed"})
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to find data into MySQL table: {error}")
+            return f"Failed to find data into MySQL table: {error}"
 
 
 @api.route("/crashvideo/upload")
@@ -212,12 +244,23 @@ class crashvideo(Resource):
 
             # 파일 ec2에서 s3로 업로드하기
             local_file = "/home/ubuntu/videoupload/" + file.filename
-            obj_file = "videoupload/" + file.filename  # S3 에 올라갈 파일명
+            obj_file = "crashvideo/" + file.filename  # S3 에 올라갈 파일명
             bucket.upload_file(local_file, obj_file)
 
             file_path = "/home/ubuntu/videoupload/" + file.filename
             os.remove(file_path)
             print(f"{local_file} uploaded to s3://{bucket_name}/{obj_file}")
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO camera_crash (videodate) VALUES ('%s')" % file.filename
+            )
+            cursor.execute("ALTER TABLE camera_crash AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
+            cursor.execute("SET @COUNT = 0;")
+            cursor.execute(
+                "UPDATE camera_crash SET ID = @COUNT:=@COUNT+1"
+            )  # ID순서 꼬인거 풀기
+            conn.commit()
 
             # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
