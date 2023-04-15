@@ -183,13 +183,15 @@ class select(Resource):
             return f"Failed to select database of MySQL table: {error}"
 
 
-@api.route("/normalvideo/watch", methods=["POST"])
+@api.route("/normalvideo/watch/<strvideodate>")
 class watchnormal(Resource):
-    def post(self):
+    def get(self, strvideodate):
         try:
             # data = request.get_json()
             # strvideodate = data["strvideodate"]
-            strvideodate = request.form.get("strvideodate")
+            # strvideodate = request.form.get("strvideodate")
+            # if strvideodate is None:
+            #     return "input data : None "
             print(strvideodate)
             cursor = conn.cursor()
             cursor.execute(
@@ -217,19 +219,22 @@ class watchnormal(Resource):
         return "http://43.201.154.195:5000/videowatch"
 
 
-@api.route("/crashvideo/watch", methods=["POST"])
+@api.route("/crashvideo/watch/<strvideodate>")
 class watchcrash(Resource):
-    def post(self):
+    def get(self, strvideodate):
         try:
-            data = request.get_json()
-            strvideodate = data["strvideodate"]
+            # data = request.get_json()
+            # strvideodate = data["strvideodate"]
+            # strvideodate = request.form.get("strvideodate")
+            # if strvideodate is None:
+            #     return "input data : None "
+            print(strvideodate)
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT ID, videodate FROM camera_crash WHERE videodate = '%s'"
                 % strvideodate
             )
             bufferclean = cursor.fetchall()
-            print(strvideodate)
 
         except mysql.connector.Error as error:  # 원인찾기용도
             print(f"Failed to find video at MySQL table: {error}")
@@ -258,7 +263,6 @@ class normalvideo(Resource):
             file = request.files["normalvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
 
             file.save("/home/ubuntu/videoupload/" + file.filename)
-            print(file.filename)
 
             # 파일 ec2에서 s3로 업로드하기
             local_file = "/home/ubuntu/videoupload/" + file.filename
