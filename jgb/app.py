@@ -1,10 +1,17 @@
-from flask import Flask, request, jsonify, Response, stream_with_context
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    Response,
+    stream_with_context,
+    render_template,
+)
 from flask_restx import Api, Resource  # Api 구현을 위한 Api 객체 import
 import mysql.connector
 import boto3
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="/home/ubuntu/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
 # RDS endpoint, username, password, database name 설정
@@ -43,9 +50,18 @@ def gen(strlocal):
 strlocal = "/home/ubuntu/videostreaming/streamingvideo.mp4"
 
 
+# @app.route("/videowatch")
+# def video_feed():
+#     return Response(gen(strlocal), mimetype="video/mp4")
+
+
 @app.route("/videowatch")
-def video_feed():
-    return Response(gen(strlocal), mimetype="video/mp4")
+def index():
+    # 로컬 동영상 경로 설정
+    video_path = "streamingvideo.mp4"
+
+    # iFrame으로 동영상 재생
+    return render_template("iframe.html", video_path=video_path)
 
 
 @api.route("/hello")  # 데코레이터 이용, '/hello' 경로에 클래스 등록
@@ -95,19 +111,6 @@ class select(Resource):
             cursor.execute("UPDATE sensor SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
             cursor.execute("SELECT * FROM sensor")
             records = cursor.fetchall()
-            # return str(records)
-
-            # return jsonify(records)
-
-            # result_str = (
-            #     str(records)
-            #     .replace("[", "")
-            #     .replace("]", "")
-            #     .replace("(", "")
-            #     .replace(")", "")
-            # )
-            # # print(result_str)
-            # return result_str
 
             data = []
             for row in records:
@@ -121,38 +124,83 @@ class select(Resource):
 
             return jsonify(data)
 
-        # except Exception as e:
-        #     print("Error selecting record.")
-        #     print(e)
-        #     return "Error selecting record."
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to select database of MySQL table: {error}")
+            return f"Failed to select database of MySQL table: {error}"
+
+
+@api.route("/normalvideo/select")
+class select(Resource):
+    def get(self):
+        try:
+            cursor = conn.cursor()
+            cursor.execute("ALTER TABLE camera_normal AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
+            cursor.execute("SET @COUNT = 0;")
+            cursor.execute(
+                "UPDATE camera_normal SET ID = @COUNT:=@COUNT+1"
+            )  # ID순서 꼬인거 풀기
+            cursor.execute("SELECT * FROM camera_normal")
+            records = cursor.fetchall()
+
+            data = []
+            for row in records:
+                obj = {}
+                obj["ID"] = row[0]
+                obj["videodate"] = row[1]
+                data.append(obj)
+
+            return jsonify(data)
 
         except mysql.connector.Error as error:  # 원인찾기용도
-            print(f"Failed to find data into MySQL table: {error}")
-            return f"Failed to find data into MySQL table: {error}"
+            print(f"Failed to select database of MySQL table: {error}")
+            return f"Failed to select database of MySQL table: {error}"
+
+
+@api.route("/crashvideo/select")
+class select(Resource):
+    def get(self):
+        try:
+            cursor = conn.cursor()
+            cursor.execute("ALTER TABLE camera_crash AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
+            cursor.execute("SET @COUNT = 0;")
+            cursor.execute(
+                "UPDATE camera_crash SET ID = @COUNT:=@COUNT+1"
+            )  # ID순서 꼬인거 풀기
+            cursor.execute("SELECT * FROM camera_crash")
+            records = cursor.fetchall()
+
+            data = []
+            for row in records:
+                obj = {}
+                obj["ID"] = row[0]
+                obj["videodate"] = row[1]
+                data.append(obj)
+
+            return jsonify(data)
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to select database of MySQL table: {error}")
+            return f"Failed to select database of MySQL table: {error}"
 
 
 @api.route("/normalvideo/watch", methods=["POST"])
-class selectnormal(Resource):
+class watchnormal(Resource):
     def post(self):
         try:
-            data = request.get_json()
-            strvideodate = data["strvideodate"]
+            # data = request.get_json()
+            # strvideodate = data["strvideodate"]
+            strvideodate = request.form.get("strvideodate")
+            print(strvideodate)
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT ID, videodate FROM camera_normal WHERE videodate = '%s'"
                 % strvideodate
             )
             bufferclean = cursor.fetchall()
-            print(strvideodate)
-            # records = cursor.fetchall()
-            # return str(records)
-        # except Exception as e:
-        #     print("Error finding video.")
-        #     print(e)
-        #     return "Error finding video."
+
         except mysql.connector.Error as error:  # 원인찾기용도
-            print(f"Failed to find data into MySQL table: {error}")
-            return f"Failed to find data into MySQL table: {error}"
+            print(f"Failed to find video at MySQL table: {error}")
+            return f"Failed to find video at MySQL table: {error}"
 
         folder_path = "/home/ubuntu/videostreaming"  # 비우고 싶은 폴더 경로
 
@@ -170,26 +218,36 @@ class selectnormal(Resource):
 
 
 @api.route("/crashvideo/watch", methods=["POST"])
-class selectcrash(Resource):
+class watchcrash(Resource):
     def post(self):
         try:
             data = request.get_json()
             strvideodate = data["strvideodate"]
-            findword = "%" + strvideodate + "%"
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT ID, videodate FROM camera_crash WHERE videodate LIKE '%s'"
-                % findword
+                "SELECT ID, videodate FROM camera_crash WHERE videodate = '%s'"
+                % strvideodate
             )
-            records = cursor.fetchall()
-            return str(records)
-        except Exception as e:
-            print("Error finding video.")
-            print(e)
-            return "Error finding video."
-        # except mysql.connector.Error as error:  # 원인찾기용도
-        #     print(f"Failed to insert record into MySQL table: {error}")
-        #     return f"Failed to insert record into MySQL table: {error}"
+            bufferclean = cursor.fetchall()
+            print(strvideodate)
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to find video at MySQL table: {error}")
+            return f"Failed to find video at MySQL table: {error}"
+
+        folder_path = "/home/ubuntu/videostreaming"  # 비우고 싶은 폴더 경로
+
+        for file_name in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, file_name)
+            if os.path.isfile(file_path):
+                os.remove(file_path)  # 파일 삭제
+
+        s3r.Bucket("mobles3").download_file(
+            "crashvideo/" + strvideodate,
+            strlocal,
+        )
+
+        return "http://43.201.154.195:5000/videowatch"
 
 
 @api.route("/normalvideo/upload")
@@ -224,14 +282,10 @@ class normalvideo(Resource):
 
             # # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
-        # except Exception as e:
-        #     print("Error uploading file.")
-        #     print(e)
-        #     return jsonify({"message": "File upload failed"})
 
         except mysql.connector.Error as error:  # 원인찾기용도
-            print(f"Failed to find data into MySQL table: {error}")
-            return f"Failed to find data into MySQL table: {error}"
+            print(f"Failed to video upload: {error}")
+            return f"Failed to video upload: {error}"
 
 
 @api.route("/crashvideo/upload")
@@ -265,12 +319,12 @@ class crashvideo(Resource):
             # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
         except Exception as e:
-            print("Error uploading file.")
+            print("file uploading file.")
             print(e)
             return jsonify({"message": "File upload failed"})
 
 
-@api.route("/normalvideo/download")  # 데코레이터 이용, '/hello' 경로에 클래스 등록
+@api.route("/normalvideo/download")  # 다운로드는 잠정적으로 사용 안함
 class videodown(Resource):
     def generate_presigned_url(self, bucket_name, object_name, expiration=3600):
         response = s3c.generate_presigned_url(
@@ -283,6 +337,62 @@ class videodown(Resource):
     def get(self):
         url = self.generate_presigned_url(bucket_name, "normalvideo/test.mp4")
         return {"url": url}
+
+
+@api.route("/normalvideo/find", methods=["POST"])  # 검색기능 만들기만해둠
+class selectnormal(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            strvideodate = data["strvideodate"]
+            cursor = conn.cursor()
+            findword = "%" + strvideodate + "%"
+            cursor.execute(
+                "SELECT ID, videodate FROM camera_normal WHERE videodate like  '%s'"
+                % findword
+            )
+            records = cursor.fetchall()
+
+            data = []
+            for row in records:
+                obj = {}
+                obj["ID"] = row[0]
+                obj["videodate"] = row[1]
+                data.append(obj)
+
+            return jsonify(data)
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to find video of MySQL table: {error}")
+            return f"Failed to find video of MySQL table: {error}"
+
+
+@api.route("/crashvideo/find", methods=["POST"])
+class selectnormal(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            strvideodate = data["strvideodate"]
+            cursor = conn.cursor()
+            findword = "%" + strvideodate + "%"
+            cursor.execute(
+                "SELECT ID, videodate FROM camera_crash WHERE videodate like  '%s'"
+                % findword
+            )
+            records = cursor.fetchall()
+
+            data = []
+            for row in records:
+                obj = {}
+                obj["ID"] = row[0]
+                obj["videodate"] = row[1]
+                data.append(obj)
+
+            return jsonify(data)
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to find video of MySQL table: {error}")
+            return f"Failed to find video of MySQL table: {error}"
 
 
 if __name__ == "__main__":
