@@ -216,7 +216,10 @@ class watchnormal(Resource):
             strlocal,
         )
 
-        return "http://43.201.154.195:5000/videowatch"
+        if request.host == "localhost:5000":
+            return "http://localhost:5000/videowatch"
+        else:
+            return "http://43.201.154.195:5000/videowatch"
 
 
 @api.route("/crashvideo/watch/<strvideodate>")
@@ -254,7 +257,10 @@ class watchcrash(Resource):
             strlocal,
         )
 
-        return "http://43.201.154.195:5000/videowatch"
+        if request.host == "localhost:5000":
+            return "http://localhost:5000/videowatch"
+        else:
+            return "http://43.201.154.195:5000/videowatch"
 
 
 @api.route("/normalvideo/upload")
