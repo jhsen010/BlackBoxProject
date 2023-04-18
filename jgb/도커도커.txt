@@ -1,0 +1,47 @@
+이미지 가져오기 docker pull ubuntu:22.04
+
+이미지로 컨테이너 오픈 docker run -it --name blackbox_server -p 5000:5000 ubuntu:22.04 /bin/bash
+
+서버 안붙으면 apt-get install -y vim openssh-server git
+
+서버 재입장 docker exec -it blackbox_server /bin/bash
+
+=========================
+
+깡통에서 컴퓨터로
+apt-get update
+apt-get -y install sudo
+sudo apt update
+apt install python3
+apt install python3-pip
+
+apt-get install git
+apt install git
+git config --global user.name [이름]
+git config --global user.mail [메일 주소]
+git clone 프로젝트
+
+========================= pip3 install -r requirement.txt 사용해서 자동설치하세영
+flask==2.2.3
+flask-restx==1.1.0
+mysql-connector-python==8.0.32
+boto3==1.26.109
+=========================
+
+s3인증하기
+apt-get install -y awscli
+aws configure
+ws_access_key_id = AKIAT7VKIIXWYI3HRKX6
+aws_secret_access_key = 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
+region = ap-northeast-2
+뭐 하나 더뜨는거 그냥 엔터하면 끝
+=========================
+
+1. docker 에 blackbox 서버 셋팅하기
+
+2. git 에 최신 코드 올리기
+
+2. docker에서 git에서 받은 코드로 서버 열고 서버가 잘 동작하는지 확인하기
+   테스트 꼭 할 것
+
+3. 해당 결과물을 dockerhub에 올려서 다른 사람이 쓸수 있게 하기 
