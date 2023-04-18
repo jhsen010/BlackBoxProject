@@ -11,7 +11,11 @@ import mysql.connector
 import boto3
 import os
 
-app = Flask(__name__, static_folder="/home/ubuntu/videostreaming/")
+projectlocal = os.path.dirname(__file__)
+
+print(projectlocal)
+
+app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
 # RDS endpoint, username, password, database name 설정
@@ -37,6 +41,8 @@ s3r = boto3.resource("s3")  # 비디오 업용
 bucket_name = "mobles3"
 bucket = s3r.Bucket(bucket_name)
 
+strlocal = projectlocal + "/videostreaming/streamingvideo.mp4"
+
 
 def gen(strlocal):
     with open(strlocal, "rb") as f:
@@ -47,19 +53,11 @@ def gen(strlocal):
             yield data
 
 
-strlocal = "/home/ubuntu/videostreaming/streamingvideo.mp4"
-
-
-# @app.route("/videowatch")
-# def video_feed():
-#     return Response(gen(strlocal), mimetype="video/mp4")
-
-
 @app.route("/videowatch")
 def index():
     # 로컬 동영상 경로 설정
     video_path = "streamingvideo.mp4"
-
+    print(video_path)
     # iFrame으로 동영상 재생
     return render_template("iframe.html", video_path=video_path)
 
@@ -204,7 +202,9 @@ class watchnormal(Resource):
             print(f"Failed to find video at MySQL table: {error}")
             return f"Failed to find video at MySQL table: {error}"
 
-        folder_path = "/home/ubuntu/videostreaming"  # 비우고 싶은 폴더 경로
+        if not os.path.exists(projectlocal + "/videostreaming"):  # 없으면 만들어
+            os.makedirs(projectlocal + "/videostreaming")
+        folder_path = projectlocal + "/videostreaming"  # 비우고 싶은 폴더 경로
 
         for file_name in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file_name)
@@ -240,7 +240,9 @@ class watchcrash(Resource):
             print(f"Failed to find video at MySQL table: {error}")
             return f"Failed to find video at MySQL table: {error}"
 
-        folder_path = "/home/ubuntu/videostreaming"  # 비우고 싶은 폴더 경로
+        if not os.path.exists(projectlocal + "/videostreaming"):  # 없으면 만들어
+            os.makedirs(projectlocal + "/videostreaming")
+        folder_path = projectlocal + "/videostreaming"  # 비우고 싶은 폴더 경로
 
         for file_name in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file_name)
@@ -262,14 +264,16 @@ class normalvideo(Resource):
             # 업로드된 파일 ec2에 저장
             file = request.files["normalvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
 
-            file.save("/home/ubuntu/videoupload/" + file.filename)
+            if not os.path.exists(projectlocal + "/videoupload"):  # 없으면 만들어
+                os.makedirs(projectlocal + "/videoupload")
+            file.save(projectlocal + "/videoupload/" + file.filename)
 
             # 파일 ec2에서 s3로 업로드하기
-            local_file = "/home/ubuntu/videoupload/" + file.filename
+            local_file = projectlocal + "/videoupload/" + file.filename
             obj_file = "normalvideo/" + file.filename  # S3 에 올라갈 파일명
             bucket.upload_file(local_file, obj_file)
 
-            file_path = "/home/ubuntu/videoupload/" + file.filename
+            file_path = projectlocal + "/videoupload/" + file.filename
             os.remove(file_path)
             print(f"{local_file} uploaded to s3://{bucket_name}/{obj_file}")
 
@@ -298,14 +302,14 @@ class crashvideo(Resource):
         try:
             # 업로드된 파일 ec2에 저장
             file = request.files["crashvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
-            file.save("/home/ubuntu/videoupload/" + file.filename)
+            file.save(projectlocal + "/videoupload/" + file.filename)
 
             # 파일 ec2에서 s3로 업로드하기
-            local_file = "/home/ubuntu/videoupload/" + file.filename
+            local_file = projectlocal + "/videoupload/" + file.filename
             obj_file = "crashvideo/" + file.filename  # S3 에 올라갈 파일명
             bucket.upload_file(local_file, obj_file)
 
-            file_path = "/home/ubuntu/videoupload/" + file.filename
+            file_path = projectlocal + "/videoupload/" + file.filename
             os.remove(file_path)
             print(f"{local_file} uploaded to s3://{bucket_name}/{obj_file}")
 
