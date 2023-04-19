@@ -13,8 +13,6 @@ import os
 
 projectlocal = os.path.dirname(__file__)
 
-print(projectlocal)
-
 app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
@@ -60,12 +58,6 @@ def index():
     print(video_path)
     # iFrame으로 동영상 재생
     return render_template("iframe.html", video_path=video_path)
-
-
-@api.route("/hello")  # 데코레이터 이용, '/hello' 경로에 클래스 등록
-class HelloWorld(Resource):
-    def get(self):  # GET 요청시 리턴 값에 해당 하는 dict를 JSON 형태로 반환
-        return {"hello": "/sensor/insert or /sensor/select"}
 
 
 @api.route("/sensor/insert", methods=["POST"])
@@ -216,10 +208,7 @@ class watchnormal(Resource):
             strlocal,
         )
 
-        if request.host == "localhost:5000":
-            return "http://localhost:5000/videowatch"
-        else:
-            return "http://43.201.154.195:5000/videowatch"
+        return "http://43.201.154.195:5000/videowatch"
 
 
 @api.route("/crashvideo/watch/<strvideodate>")
@@ -257,10 +246,7 @@ class watchcrash(Resource):
             strlocal,
         )
 
-        if request.host == "localhost:5000":
-            return "http://localhost:5000/videowatch"
-        else:
-            return "http://43.201.154.195:5000/videowatch"
+        return "http://43.201.154.195:5000/videowatch"
 
 
 @api.route("/normalvideo/upload")
