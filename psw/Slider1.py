@@ -17,6 +17,18 @@ spi.max_speed_hz = 100000
 axel_channel = 0
 break_channel = 1
 
+
+# MCP3008을 통해 전송된 아날로그 데이터를 읽어드림
+def readadc(adcnum):  # adcnum: 읽어들일 채널
+    # spi.xfer2()함수를 통해 MCP3008에게 3개의 바이트 데이터(start bit, channel select, don't care bit)를
+    # 전송하고, MCP3008으로부터 2바이트의 데이터를 수신
+    # 이것을 이용하여 10비트 아날로그 값을 계산하여 반환
+    # 반환값: 0 ~ 1023
+    r = spi.xfer2([1, (8 + adcnum) << 4, 0])
+    data = ((r[1] & 3) << 8) + r[2]
+    return data
+
+
 # 모터구동을 위한 PWM핀 설정
 # 엔코더값을 받아올 핀 설정
 PWM_A = 18
@@ -44,17 +56,6 @@ def set_motor_speed(speed):
     pwm_A.ChangeDutyCycle(abs(speed))
 
 
-# MCP3008을 통해 전송된 아날로그 데이터를 읽어드림
-def readadc(adcnum):  # adcnum: 읽어들일 채널
-    # spi.xfer2()함수를 통해 MCP3008에게 3개의 바이트 데이터(start bit, channel select, don't care bit)를
-    # 전송하고, MCP3008으로부터 2바이트의 데이터를 수신
-    # 이것을 이용하여 10비트 아날로그 값을 계산하여 반환
-    # 반환값: 0 ~ 1023
-    r = spi.xfer2([1, (8 + adcnum) << 4, 0])
-    data = ((r[1] & 3) << 8) + r[2]
-    return data
-
-
 # A채널의 신호를 비교하여 encoderPos값을 증가 또는 감소
 def encoderA(channel):
     # encoderPos를 다른 함수에서도 사용하기 위해 전역 변수로 선언
@@ -76,6 +77,10 @@ def encoderB(channel):
         encoderPos += 1
 
 
+IO.add_event_detect(encPinA, IO.BOTH, callback=encoderA)
+IO.add_event_detect(encPinB, IO.BOTH, callback=encoderB)
+
+
 def change_motor_speed(axel_value, break_value):
     # axel_value와 break_value의 평균 값을 구하고 1023으로 나누어 비율 값으로 변환
     ratio = (axel_value - break_value) / (2 * 1023)
@@ -88,8 +93,41 @@ def change_motor_speed(axel_value, break_value):
     set_motor_speed(speed)
 
 
-IO.add_event_detect(encPinA, IO.BOTH, callback=encoderA)
-IO.add_event_detect(encPinB, IO.BOTH, callback=encoderB)
+# def Calculation_RPM(prevTime, encoderPos, prevEncoderPos):
+#     currTime = time.time()
+#     elapsedTime = currTime - prevTime  # 이전에 측정 시간으로부터 현재까지의 경과시간
+#     deltaEncoder = encoderPos - prevEncoderPos  # 변화한 회전수
+
+#     rpm = deltaEncoder / (elapsedTime * 360.0) * 60
+
+#     print(f"RPM: {rpm}")
+
+#     # 이전 측정 시간과 이전 엔코더 위치를 저장해 둠으로써
+#     # 다음 측정 시간에서 현재 측정된 시간과 엔코더 위치의 차이를
+#     # 계산하여 회전 속도를 측정
+#     # 이전 값과 현재 값을 비교하면서 변화를 측정하는 것을 센서값의 미분이라고 함
+#     prevTime = currTime
+#     prevEncoderPos = encoderPos
+
+#     return rpm
+
+
+def send_log(speed):
+    now = datetime.datetime.now()
+    strnow = now.strftime("%Y%m%d_%H%M%S")
+    url = "http://43.201.154.195:5000/sensor/insert"
+    data = {
+        "strdate": strnow,
+        "straccel": str(axel_value),
+        "strbreak": str(break_value),
+        "intspeed": speed,
+    }
+
+    headers = {"Content-type": "application/json"}
+    data_json = json.dumps(data)
+
+    requests.post(url, data=data_json, headers=headers)
+
 
 try:
     while True:
@@ -107,8 +145,9 @@ try:
 
         # elapsedTime에 360.0을 곱해주어 초를 분으로 변환
         rpm = deltaEncoder / (elapsedTime * 360.0) * 60
-        hour = rpm / 2
-        print(f"RPM: {rpm}  시속:{hour}")
+        sec = (2 * 3.14 * 38.985 * rpm) / 60
+        hour = (sec * 3600) / 100000
+        print(f"RPM: {abs(rpm)}  시속:{abs(hour)}")
 
         # 이전 측정 시간과 이전 엔코더 위치를 저장해 둠으로써
         # 다음 측정 시간에서 현재 측정된 시간과 엔코더 위치의 차이를
@@ -117,22 +156,11 @@ try:
         prevTime = currTime
         prevEncoderPos = encoderPos
 
-        now = datetime.datetime.now()
-        strnow = now.strftime("%Y%m%d_%H%M%S")
-        url = "http://43.201.154.195:5000/sensor/insert"
-        data = {
-            "strdate": strnow,
-            "straccel": str(axel_value),
-            "strbreak": str(break_value),
-            "intspeed": hour,
-        }
-
-        headers = {"Content-type": "application/json"}
-        data_json = json.dumps(data)
-
-        response = requests.post(url, data=data_json, headers=headers)
+        # send_log(speed)
 
         time.sleep(0.1)
 
 except KeyboardInterrupt:
+    IO.output(encPinA, IO.LOW)
+    IO.output(encPinB, IO.LOW)
     IO.cleanup()

@@ -1,0 +1,4 @@
+opencv-python==4.7.0.72
+numpy==1.24.2
+moviepy==2.8.1
+spidev==3.6

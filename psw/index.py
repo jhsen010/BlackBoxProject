@@ -13,8 +13,8 @@ prev_video_files = [
 ]
 
 while True:
-    # 전송하기전 6분14초간 기다림
-    # time.sleep(374)
+    # 전송하기전 5분간 기다림
+    # time.sleep(300)
 
     # 새 비디오 파일 목록 가져오기
     new_video_files = [

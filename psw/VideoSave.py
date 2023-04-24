@@ -4,7 +4,6 @@ import time
 import datetime
 import requests
 
-
 while 1:
     # 캠을 켭니다.
     cap = cv2.VideoCapture(0)
@@ -27,21 +26,21 @@ while 1:
     save_file = os.path.join(save_path, filename)
 
     # 비디오 코덱을 설정합니다.
-    fourcc = cv2.VideoWriter_fourcc(*"h264")
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
     # 비디오 파일을 저장할 객체를 생성합니다.
     out = cv2.VideoWriter(save_file, fourcc, 20.0, (640, 480))
 
     # 지정한 시간(초) 동안 비디오를 캡처하고 저장합니다.
     start_time = time.time()
-    while (time.time() - start_time) < 250:  # 5분 동안 캡처합니다.
+    while (time.time() - start_time) < 200:  # 5분 동안 캡처합니다.
         ret, frame = cap.read()  # 영상을 캡처합니다.
 
         # 캡처된 영상을 저장합니다.
         if ret == True:
             out.write(frame)
 
-            cv2.imshow("frame", frame)
+            # cv2.imshow("frame", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
         else:
