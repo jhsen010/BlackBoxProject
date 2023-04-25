@@ -2,7 +2,7 @@ import requests
 import os
 import time
 
-os.chdir("/home/pi/2team/psw")
+os.chdir("psw")
 
 url_video = "http://43.201.154.195:5000/normalvideo/upload"
 video_dir = "videos"

@@ -112,7 +112,7 @@ def change_motor_speed(axel_value, break_value):
 #     return rpm
 
 
-def send_log(speed):
+def send_log(speed, axel_value, break_value):
     now = datetime.datetime.now()
     strnow = now.strftime("%Y%m%d_%H%M%S")
     url = "http://43.201.154.195:5000/sensor/insert"
@@ -134,8 +134,10 @@ try:
         # readadc 함수로 슬라이드의 SPI데이터를 읽어옴
         axel_value = readadc(axel_channel)
         break_value = readadc(break_channel)
+        axel_v = (axel_value / 1023) * 100
+        break_v = (break_value / 1023) * 100
         print("------------------------")
-        print(f"axel_Value: {axel_value}    break_Value: {break_value}")
+        print(f"axel_Value: {axel_v}%    break_Value: {break_v}%")
 
         change_motor_speed(axel_value, break_value)
 
@@ -156,7 +158,7 @@ try:
         prevTime = currTime
         prevEncoderPos = encoderPos
 
-        # send_log(speed)
+        # send_log(speed,axel_v,break_v)
 
         time.sleep(0.1)
 
