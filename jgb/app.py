@@ -5,30 +5,32 @@ from flask_restx import Api, Resource  # Api 구현을 위한 Api 객체 import
 import mysql.connector
 import boto3
 import os
-
+from init import rdsconnect
 
 projectlocal = os.path.dirname(__file__)
 
 app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
-load_dotenv()
-# RDS endpoint, username, password, database name 설정
-ENDPOINT = os.environ.get("endpoint")
-PORT = os.environ.get("port")
-USR = os.environ.get("usr")
-PWD = os.environ.get("pwd")
-DBNAME = os.environ.get("dbname")
+conn = rdsconnect.setting()  # 이게 된다고?
 
-# RDS에 연결
-try:
-    conn = mysql.connector.connect(
-        host=ENDPOINT, port=PORT, user=USR, password=PWD, database=DBNAME
-    )
-    print("Connected to RDS successfully!")
-except Exception as e:
-    print("Unable to connect to RDS.")
-    print(e)
+# load_dotenv()
+# # RDS endpoint, username, password, database name 설정
+# ENDPOINT = os.environ.get("endpoint")
+# PORT = os.environ.get("port")
+# USR = os.environ.get("usr")
+# PWD = os.environ.get("pwd")
+# DBNAME = os.environ.get("dbname")
+
+# # RDS에 연결
+# try:
+#     conn = mysql.connector.connect(
+#         host=ENDPOINT, port=PORT, user=USR, password=PWD, database=DBNAME
+#     )
+#     print("Connected to RDS successfully!")
+# except Exception as e:
+#     print("Unable to connect to RDS.")
+#     print(e)
 
 s3c = boto3.client("s3")  # 비디오 다운용
 
