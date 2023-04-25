@@ -1,27 +1,24 @@
-from flask import (
-    Flask,
-    request,
-    jsonify,
-    Response,
-    stream_with_context,
-    render_template,
-)
+from flask import Flask, request, jsonify, Response
+from flask import stream_with_context, render_template
+from dotenv import load_dotenv
 from flask_restx import Api, Resource  # Api 구현을 위한 Api 객체 import
 import mysql.connector
 import boto3
 import os
+
 
 projectlocal = os.path.dirname(__file__)
 
 app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
+load_dotenv()
 # RDS endpoint, username, password, database name 설정
-ENDPOINT = "moble.ckaipdhtuyli.ap-northeast-2.rds.amazonaws.com"
-PORT = "3306"
-USR = "moble_project"
-PWD = "qoawkddj23"
-DBNAME = "moble_project"
+ENDPOINT = os.environ.get("endpoint")
+PORT = os.environ.get("port")
+USR = os.environ.get("usr")
+PWD = os.environ.get("pwd")
+DBNAME = os.environ.get("dbname")
 
 # RDS에 연결
 try:
@@ -294,6 +291,9 @@ class crashvideo(Resource):
         try:
             # 업로드된 파일 ec2에 저장
             file = request.files["crashvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
+
+            if not os.path.exists(projectlocal + "/videoupload"):  # 없으면 만들어
+                os.makedirs(projectlocal + "/videoupload")
             file.save(projectlocal + "/videoupload/" + file.filename)
 
             # 파일 ec2에서 s3로 업로드하기
@@ -316,12 +316,12 @@ class crashvideo(Resource):
             )  # ID순서 꼬인거 풀기
             conn.commit()
 
-            # 파일 업로드 성공시 메시지 반환
+            # # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
-        except Exception as e:
-            print("file uploading file.")
-            print(e)
-            return jsonify({"message": "File upload failed"})
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to video upload: {error}")
+            return f"Failed to video upload: {error}"
 
 
 @api.route("/normalvideo/download")  # 다운로드는 잠정적으로 사용 안함
