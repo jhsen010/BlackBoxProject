@@ -7,11 +7,10 @@ import os
 # 디렉토리 경로
 dir_path = "videos"
 cut_path = "ShockVideos"
+os.chdir("psw")
 
 
 def find_path():
-    # 작업중인 디렉토리 변경
-    os.chdir("psw")
     print(os.getcwd())
 
     # 디렉토리 내 모든 파일과 디렉토리의 이름을 얻습니다.
