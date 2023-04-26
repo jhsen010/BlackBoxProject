@@ -1,4 +1,4 @@
-def DBsensor(data, conn):
+def DBsensorinput(data, conn):
     strdate = data["strdate"]
     straccel = data["straccel"]
     strbreak = data["strbreak"]

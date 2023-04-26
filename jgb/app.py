@@ -6,6 +6,8 @@ import mysql.connector
 import boto3
 import os
 from init import rdsconnect
+from videocode import video_func
+from DBcode import DB_func
 
 projectlocal = os.path.dirname(__file__)
 
@@ -14,40 +16,7 @@ api = Api(app)  # Flask 객체에 Api 객체 등록
 
 conn = rdsconnect.setting()  # 이게 된다고?
 
-# load_dotenv()
-# # RDS endpoint, username, password, database name 설정
-# ENDPOINT = os.environ.get("endpoint")
-# PORT = os.environ.get("port")
-# USR = os.environ.get("usr")
-# PWD = os.environ.get("pwd")
-# DBNAME = os.environ.get("dbname")
-
-# # RDS에 연결
-# try:
-#     conn = mysql.connector.connect(
-#         host=ENDPOINT, port=PORT, user=USR, password=PWD, database=DBNAME
-#     )
-#     print("Connected to RDS successfully!")
-# except Exception as e:
-#     print("Unable to connect to RDS.")
-#     print(e)
-
-s3c = boto3.client("s3")  # 비디오 다운용
-
-s3r = boto3.resource("s3")  # 비디오 업용
-bucket_name = "mobles3"
-bucket = s3r.Bucket(bucket_name)
-
-strlocal = projectlocal + "/videostreaming/streamingvideo.mp4"
-
-
-def gen(strlocal):
-    with open(strlocal, "rb") as f:
-        while True:
-            data = f.read(1024)
-            if not data:
-                break
-            yield data
+s3c, s3r, strlocal, bucket, bucket_name = video_func.video_init()
 
 
 @app.route("/videowatch")
@@ -63,20 +32,9 @@ def index():
 class sensorinsert(Resource):
     def post(self):
         try:
-            data = request.get_json()
-            strdate = data["strdate"]
-            straccel = data["straccel"]
-            strbreak = data["strbreak"]
-            intspeed = data["intspeed"]
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO sensor (date, accel, break, speed) VALUES ('%s', '%s', '%s', %d)"
-                % (strdate, straccel, strbreak, intspeed)
+            strdate, straccel, strbreak, intspeed = DB_func.DBsensorinput(
+                request.get_json(), conn
             )
-            cursor.execute("ALTER TABLE sensor AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
-            cursor.execute("SET @COUNT = 0;")
-            cursor.execute("UPDATE sensor SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
-            conn.commit()
             return {
                 "inserted successfully!": "%s, %s, %s, %d"
                 % (strdate, straccel, strbreak, intspeed)
@@ -206,6 +164,8 @@ class watchnormal(Resource):
             "normalvideo/" + strvideodate,
             strlocal,
         )
+
+        video_func.incord()
 
         return "http://43.201.154.195:5000/videowatch"
 

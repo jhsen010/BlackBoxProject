@@ -15,7 +15,7 @@ def video_init():
     bucket_name = "mobles3"
     bucket = s3r.Bucket(bucket_name)
 
-    return s3c, s3r, strlocal
+    return s3c, s3r, strlocal, bucket, bucket_name
 
 
 def gen(strlocal):
