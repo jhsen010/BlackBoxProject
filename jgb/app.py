@@ -1,54 +1,22 @@
-from flask import (
-    Flask,
-    request,
-    jsonify,
-    Response,
-    stream_with_context,
-    render_template,
-)
+from flask import Flask, request, jsonify, Response
+from flask import stream_with_context, render_template
+from dotenv import load_dotenv
 from flask_restx import Api, Resource  # Api 구현을 위한 Api 객체 import
 import mysql.connector
 import boto3
 import os
+from init import rdsconnect
+from videocode import video_func
+from DBcode import DB_func
 
 projectlocal = os.path.dirname(__file__)
 
 app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
-# RDS endpoint, username, password, database name 설정
-ENDPOINT = "moble.ckaipdhtuyli.ap-northeast-2.rds.amazonaws.com"
-PORT = "3306"
-USR = "moble_project"
-PWD = "qoawkddj23"
-DBNAME = "moble_project"
+conn = rdsconnect.setting()  # 이게 된다고?
 
-# RDS에 연결
-try:
-    conn = mysql.connector.connect(
-        host=ENDPOINT, port=PORT, user=USR, password=PWD, database=DBNAME
-    )
-    print("Connected to RDS successfully!")
-except Exception as e:
-    print("Unable to connect to RDS.")
-    print(e)
-
-s3c = boto3.client("s3")  # 비디오 다운용
-
-s3r = boto3.resource("s3")  # 비디오 업용
-bucket_name = "mobles3"
-bucket = s3r.Bucket(bucket_name)
-
-strlocal = projectlocal + "/videostreaming/streamingvideo.mp4"
-
-
-def gen(strlocal):
-    with open(strlocal, "rb") as f:
-        while True:
-            data = f.read(1024)
-            if not data:
-                break
-            yield data
+s3c, s3r, strlocal, bucket, bucket_name = video_func.video_init()
 
 
 @app.route("/videowatch")
@@ -64,20 +32,9 @@ def index():
 class sensorinsert(Resource):
     def post(self):
         try:
-            data = request.get_json()
-            strdate = data["strdate"]
-            straccel = data["straccel"]
-            strbreak = data["strbreak"]
-            intspeed = data["intspeed"]
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO sensor (date, accel, break, speed) VALUES ('%s', '%s', '%s', %d)"
-                % (strdate, straccel, strbreak, intspeed)
+            strdate, straccel, strbreak, intspeed = DB_func.DBsensorinput(
+                request.get_json(), conn
             )
-            cursor.execute("ALTER TABLE sensor AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
-            cursor.execute("SET @COUNT = 0;")
-            cursor.execute("UPDATE sensor SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
-            conn.commit()
             return {
                 "inserted successfully!": "%s, %s, %s, %d"
                 % (strdate, straccel, strbreak, intspeed)
@@ -208,6 +165,8 @@ class watchnormal(Resource):
             strlocal,
         )
 
+        video_func.incord()
+
         return "http://43.201.154.195:5000/videowatch"
 
 
@@ -294,6 +253,9 @@ class crashvideo(Resource):
         try:
             # 업로드된 파일 ec2에 저장
             file = request.files["crashvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
+
+            if not os.path.exists(projectlocal + "/videoupload"):  # 없으면 만들어
+                os.makedirs(projectlocal + "/videoupload")
             file.save(projectlocal + "/videoupload/" + file.filename)
 
             # 파일 ec2에서 s3로 업로드하기
@@ -316,12 +278,12 @@ class crashvideo(Resource):
             )  # ID순서 꼬인거 풀기
             conn.commit()
 
-            # 파일 업로드 성공시 메시지 반환
+            # # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
-        except Exception as e:
-            print("file uploading file.")
-            print(e)
-            return jsonify({"message": "File upload failed"})
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to video upload: {error}")
+            return f"Failed to video upload: {error}"
 
 
 @api.route("/normalvideo/download")  # 다운로드는 잠정적으로 사용 안함
