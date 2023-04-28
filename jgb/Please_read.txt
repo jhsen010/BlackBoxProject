@@ -47,5 +47,9 @@ region = ap-northeast-2
 도커 허브에 업로드 하는법
 docker login
 docker stop 컨테이너ID
-docker commit -a "jjy" [container_id] [image_name/tag]
-docker push 도커허브계정명/도커허브repository
+docker commit -a "jjy" [container_id] [image_name/tag]:'nametag'
+docker push 도커허브계정명/도커허브repository:nametag
+
+다운로드는
+docker push 도커허브계정명/도커허브repository:nametag
+nametag안적으면 자동으로 lastest로 다운됨
