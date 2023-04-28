@@ -71,23 +71,23 @@ def crash_select(conn):
 
     return data
 
+
 def normal_watch(conn, strvideodate):
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT ID, videodate FROM camera_normal WHERE videodate = '%s'"
-        % strvideodate
-    )
-    bufferclean = cursor.fetchall()
-    
-def crash_watch(conn, strvideodate):
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT ID, videodate FROM camera_crash WHERE videodate = '%s'"
-        % strvideodate
+        "SELECT ID, videodate FROM camera_normal WHERE videodate = '%s'" % strvideodate
     )
     bufferclean = cursor.fetchall()
 
-    
+
+def crash_watch(conn, strvideodate):
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT ID, videodate FROM camera_crash WHERE videodate = '%s'" % strvideodate
+    )
+    bufferclean = cursor.fetchall()
+
+
 def normal_upload_insert(conn, file):
     cursor = conn.cursor()
     cursor.execute(
@@ -106,3 +106,41 @@ def crash_upload_insert(conn, file):
     cursor.execute("SET @COUNT = 0;")
     cursor.execute("UPDATE camera_crash SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
     conn.commit()
+
+
+def normal_find(conn, data):
+    strvideodate = data["strvideodate"]
+    cursor = conn.cursor()
+    findword = "%" + strvideodate + "%"
+    cursor.execute(
+        "SELECT ID, videodate FROM camera_normal WHERE videodate like  '%s'" % findword
+    )
+    records = cursor.fetchall()
+
+    data = []
+    for row in records:
+        obj = {}
+        obj["ID"] = row[0]
+        obj["videodate"] = row[1]
+        data.append(obj)
+
+    return data
+
+
+def crash_find(conn, data):
+    strvideodate = data["strvideodate"]
+    cursor = conn.cursor()
+    findword = "%" + strvideodate + "%"
+    cursor.execute(
+        "SELECT ID, videodate FROM camera_crash WHERE videodate like  '%s'" % findword
+    )
+    records = cursor.fetchall()
+
+    data = []
+    for row in records:
+        obj = {}
+        obj["ID"] = row[0]
+        obj["videodate"] = row[1]
+        data.append(obj)
+
+    return data
