@@ -39,3 +39,31 @@ def incord():
 
     # ffmpeg 실행
     subprocess.call(command, shell=True)
+
+
+def normal_download(bucket, strvideodate):
+    bucket.download_file(
+        "normalvideo/" + strvideodate,
+        strlocal,
+    )
+
+
+def crash_download(bucket, strvideodate):
+    bucket.download_file(
+        "crashvideo/" + strvideodate,
+        strlocal,
+    )
+
+
+def normal_upload(file, bucket):
+    # 파일 ec2에서 s3로 업로드하기
+    local_file = dir + "/videoupload/" + file.filename
+    obj_file = "normalvideo/" + file.filename  # S3 에 올라갈 파일명
+    bucket.upload_file(local_file, obj_file)
+
+
+def crash_upload(file, bucket):
+    # 파일 ec2에서 s3로 업로드하기
+    local_file = dir + "/videoupload/" + file.filename
+    obj_file = "crashvideo/" + file.filename  # S3 에 올라갈 파일명
+    bucket.upload_file(local_file, obj_file)
