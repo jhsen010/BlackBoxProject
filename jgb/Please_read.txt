@@ -21,11 +21,18 @@ git config --global user.name [이름]
 git config --global user.mail [메일 주소]
 git clone 프로젝트
 
+apt -y install vim
+
+========================= 이건 영상 인코딩용으로 직접 입력해줄것!!!!!!!!!
+sudo apt-get install ffmpeg
+
 ========================= pip3 install -r requirement.txt 사용해서 자동설치하세영
 flask==2.2.3
 flask-restx==1.1.0
 mysql-connector-python==8.0.32
 boto3==1.26.109
+python-dotenv==1.0.0
+ffmpeg-python==0.2.0
 =========================
 
 s3인증하기
@@ -34,14 +41,11 @@ aws configure
 ws_access_key_id = AKIAT7VKIIXWYI3HRKX6
 aws_secret_access_key = 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
 region = ap-northeast-2
-뭐 하나 더뜨는거 그냥 엔터하면 끝
+
 =========================
 
-1. docker 에 blackbox 서버 셋팅하기
-
-2. git 에 최신 코드 올리기
-
-2. docker에서 git에서 받은 코드로 서버 열고 서버가 잘 동작하는지 확인하기
-   테스트 꼭 할 것
-
-3. 해당 결과물을 dockerhub에 올려서 다른 사람이 쓸수 있게 하기 
+도커 허브에 업로드 하는법
+docker login
+docker stop 컨테이너ID
+docker commit -a "jjy" [container_id] [image_name/tag]
+docker push 도커허브계정명/도커허브repository
