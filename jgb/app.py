@@ -170,18 +170,21 @@ class crashvideo(Resource):
             return f"Failed to video upload: {error}"
 
 
-@api.route("/normalvideo/download")  # 다운로드는 잠정적으로 사용 안함
+@api.route("/normalvideo/download/<strvideodate>")  # 다운로드는 잠정적으로 사용 안함
 class videodown(Resource):
-    def generate_presigned_url(self, bucket_name, object_name, expiration=3600):
-        response = s3c.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": "mobles3", "Key": "normalvideo/test.mp4"},
-            ExpiresIn=expiration,
+    def get(self, strvideodate):
+        url = video_func.generate_presigned_url(
+            "normal", bucket_name, "normalvideo/" + strvideodate, strvideodate, s3c
         )
-        return response
+        return {"url": url}
 
-    def get(self):
-        url = self.generate_presigned_url(bucket_name, "normalvideo/test.mp4")
+
+@api.route("/crashvideo/download/<strvideodate>")  # 다운로드는 잠정적으로 사용 안함
+class videodown(Resource):
+    def get(self, strvideodate):
+        url = video_func.generate_presigned_url(
+            "crash", bucket_name, "normalvideo/" + strvideodate, strvideodate, s3c
+        )
         return {"url": url}
 
 
@@ -189,22 +192,7 @@ class videodown(Resource):
 class selectnormal(Resource):
     def post(self):
         try:
-            data = request.get_json()
-            strvideodate = data["strvideodate"]
-            cursor = conn.cursor()
-            findword = "%" + strvideodate + "%"
-            cursor.execute(
-                "SELECT ID, videodate FROM camera_normal WHERE videodate like  '%s'"
-                % findword
-            )
-            records = cursor.fetchall()
-
-            data = []
-            for row in records:
-                obj = {}
-                obj["ID"] = row[0]
-                obj["videodate"] = row[1]
-                data.append(obj)
+            data = DB_func.normal_find(conn, request.get_json())
 
             return jsonify(data)
 
@@ -217,22 +205,7 @@ class selectnormal(Resource):
 class selectnormal(Resource):
     def post(self):
         try:
-            data = request.get_json()
-            strvideodate = data["strvideodate"]
-            cursor = conn.cursor()
-            findword = "%" + strvideodate + "%"
-            cursor.execute(
-                "SELECT ID, videodate FROM camera_crash WHERE videodate like  '%s'"
-                % findword
-            )
-            records = cursor.fetchall()
-
-            data = []
-            for row in records:
-                obj = {}
-                obj["ID"] = row[0]
-                obj["videodate"] = row[1]
-                data.append(obj)
+            data = DB_func.crash_find(conn, request.get_json())
 
             return jsonify(data)
 
