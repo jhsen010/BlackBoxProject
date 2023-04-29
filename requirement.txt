@@ -3,3 +3,4 @@ numpy==1.24.2
 moviepy==2.8.1
 spidev==3.6
 flask==2.2.3
+pymysql==1.0.3

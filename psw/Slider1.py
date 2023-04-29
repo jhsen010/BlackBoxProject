@@ -4,7 +4,7 @@ import RPi.GPIO as IO
 import requests
 import json
 import datetime
-import os
+import pymysql
 
 # SPI 인스턴스 spi생성
 spi = spidev.SpiDev()
@@ -93,25 +93,6 @@ def change_motor_speed(axel_value, break_value):
     set_motor_speed(speed)
 
 
-# def Calculation_RPM(prevTime, encoderPos, prevEncoderPos):
-#     currTime = time.time()
-#     elapsedTime = currTime - prevTime  # 이전에 측정 시간으로부터 현재까지의 경과시간
-#     deltaEncoder = encoderPos - prevEncoderPos  # 변화한 회전수
-
-#     rpm = deltaEncoder / (elapsedTime * 360.0) * 60
-
-#     print(f"RPM: {rpm}")
-
-#     # 이전 측정 시간과 이전 엔코더 위치를 저장해 둠으로써
-#     # 다음 측정 시간에서 현재 측정된 시간과 엔코더 위치의 차이를
-#     # 계산하여 회전 속도를 측정
-#     # 이전 값과 현재 값을 비교하면서 변화를 측정하는 것을 센서값의 미분이라고 함
-#     prevTime = currTime
-#     prevEncoderPos = encoderPos
-
-#     return rpm
-
-
 def send_log(speed, axel_value, break_value):
     now = datetime.datetime.now()
     strnow = now.strftime("%Y%m%d_%H%M%S")
@@ -127,6 +108,23 @@ def send_log(speed, axel_value, break_value):
     data_json = json.dumps(data)
 
     requests.post(url, data=data_json, headers=headers)
+
+
+# 데이터베이스 연결 초기 설정
+mydb = pymysql.connect(
+    host="localhost", user="root", password="0000", charset="utf8", database="Sensor"
+)
+mycursor = mydb.cursor()
+
+
+def insert_db(date, hourv, exel_percent, break_percent):
+    exel_percent = str(exel_percent) + "%"
+    break_percent = str(break_percent) + "%"
+    sql = "INSERT INTO sensordata ( DATE, SPEED, EXEL_VALUE, BREAK_VALUE) VALUES (%s, %s,%s, %s);"
+    # val = (date, hour, exel_percent, break_percent)
+    mycursor.execute(sql, [date, hourv, exel_percent, break_percent])
+
+    mydb.commit()
 
 
 try:
@@ -147,8 +145,7 @@ try:
 
         # elapsedTime에 360.0을 곱해주어 초를 분으로 변환
         rpm = deltaEncoder / (elapsedTime * 360.0) * 60
-        sec = (2 * 3.14 * 38.985 * rpm) / 60
-        hour = (sec * 3600) / 100000
+        hour = rpm / 2
         print(f"RPM: {abs(rpm)}  시속:{abs(hour)}")
 
         # 이전 측정 시간과 이전 엔코더 위치를 저장해 둠으로써
@@ -159,6 +156,10 @@ try:
         prevEncoderPos = encoderPos
 
         # send_log(speed,axel_v,break_v)
+
+        now = datetime.datetime.now()
+        strnow = now.strftime("%Y%m%d_%H%M%S")
+        insert_db(strnow, hour, round(axel_v, 2), round(break_v, 2))
 
         time.sleep(0.1)
 
