@@ -164,6 +164,6 @@ try:
         time.sleep(0.1)
 
 except KeyboardInterrupt:
-    IO.output(encPinA, IO.LOW)
-    IO.output(encPinB, IO.LOW)
+    pwm_A.stop()
     IO.cleanup()
+    spi.close()
