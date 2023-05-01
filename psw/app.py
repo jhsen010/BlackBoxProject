@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import os
-import time
+import VideoDef
 import requests
 
 app = Flask(__name__)
