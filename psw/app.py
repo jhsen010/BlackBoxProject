@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify, render_template
 import os
 import VideoDef
+import time
 import requests
 
 app = Flask(__name__)
-app.config["UPLOAD_FOLDER"] = "videos"
 
+app.config["UPLOAD_FOLDER"] = "videos"
 url_video = "http://43.201.154.195:5000/normalvideo/upload"
 video_dir = "videos"
 
@@ -14,14 +15,12 @@ crash_url_video = "http://43.201.154.195:5000/crashvideo/upload"
 crash_video_dir = "ShockVideos"
 
 
+# "/"와 "/upload"를 합쳐서 버튼없이 웹서버 접속시 자동으로 보내게 완성
 @app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route("/upload", methods=["POST"])
+@app.route("/upload", methods=["POST", "GET"])
 def upload_video():
     os.chdir("psw")
+
     # 이전에 보낸 비디오 파일 목록 가져오기
     prev_video_files = [
         os.path.join(video_dir, f) for f in os.listdir(video_dir) if f.endswith(".mp4")
@@ -50,6 +49,7 @@ def upload_video():
 
     # Return a response
     return jsonify({"message": "Videos uploaded successfully."})
+    # return render_template("index.html")
 
 
 @app.route("/crashupload", methods=["POST"])
