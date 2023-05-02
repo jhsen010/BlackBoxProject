@@ -1,28 +1,23 @@
 import os
-import glob
+import time
 
-os.chdir("psw")
+# Set the directory path where the video files are stored
+dir_path = "videos"
 
-# Set maximum storage space in bytes
-max_storage = 1000000000  # 1GB
-
-# Set path to video folder
-video_folder = "videos"
 while True:
-    # Get total size of video folder in bytes
-    total_size = sum(
-        os.path.getsize(f) for f in glob.glob(os.path.join(video_folder, "*"))
-    )
+    # Get the remaining storage space of the Raspberry Pi
+    remaining_space = os.statvfs("/").f_bfree * os.statvfs("/").f_frsize
 
-    # Check if storage is full
-    if total_size > max_storage:
-        # Get list of videos sorted by creation time
-        video_list = sorted(
-            glob.glob(os.path.join(video_folder, "*.mp4")), key=os.path.getctime
-        )
+    # If remaining storage space is less than 1GB, delete the oldest video file
+    if remaining_space < 1e9:
+        # Get the list of video files in the directory
+        video_files = os.listdir(dir_path)
 
-        # Delete oldest videos until storage is under maximum
-        while total_size > max_storage and video_list:
-            oldest_video = video_list.pop(0)
-            os.remove(oldest_video)
-            total_size -= os.path.getsize(oldest_video)
+        # Sort the video files by their creation time
+        video_files.sort(key=lambda x: os.stat(os.path.join(dir_path, x)).st_ctime)
+
+        # Delete the oldest video file
+        os.remove(os.path.join(dir_path, video_files[0]))
+
+    # Wait for 10 minutes before checking again
+    time.sleep(60)
