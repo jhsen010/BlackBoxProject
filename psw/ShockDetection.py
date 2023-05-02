@@ -7,7 +7,7 @@ import os
 # 디렉토리 경로
 dir_path = "videos"
 cut_path = "ShockVideos"
-os.chdir("psw")
+# os.chdir("psw")
 
 
 def find_path():

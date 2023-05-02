@@ -1,6 +1,7 @@
 import pymysql
 import requests
 import json
+import logging
 
 # 데이터 베이스 연결
 conn = pymysql.connect(
@@ -15,6 +16,7 @@ rows = cur.fetchall()
 
 # 데이터 전송
 url = "http://43.201.154.195:5000/sensor/insert"
+success = True
 for row in rows:
     data = {
         "strdate": row[0],
@@ -24,4 +26,16 @@ for row in rows:
     }
     headers = {"Content-type": "application/json"}
     data_json = json.dumps(data)
-    requests.post(url, data=data_json, headers=headers)
+    response = requests.post(url, data=data_json, headers=headers)
+    if response.status_code != 200:
+        success = False
+        logging.error("Failed to send data for row: %s", row)
+
+if success:
+    # delete all data in the database
+    cur.execute("DELETE FROM sensordata;")
+    conn.commit()
+else:
+    logging.warning("Data transmission failed, no data was deleted from the database.")
+
+logging.info("Data transmission and deletion completed.")

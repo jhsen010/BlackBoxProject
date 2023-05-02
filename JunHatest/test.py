@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import time
 
-model = "/home/BlackBoxProject/JunHatest/model.tflite"
+model = "/home/BlackBoxProject/JunHatest/final.tflite"
 interpreter = tflite.Interpreter(model_path=model)
 interpreter.allocate_tensors()
 
@@ -74,7 +74,7 @@ while cap.isOpened():
 
     # Display the frame and prediction
     # cv2.imshow("frame", frame)
-    time.sleep(0.5)
+    time.sleep(0.2)
     print("Prediction:", prediction)
 
     # Press 'q' to exit the program

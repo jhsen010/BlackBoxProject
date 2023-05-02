@@ -29,3 +29,14 @@ def different_video_list(NewVideoFiles, PrevVideoFales, url):
 
         # 업로드한 비디오 파일을 이전에 업로드한 비디오 파일 목록에 추가
         PrevVideoFales.append(file_name)
+
+
+def crash_different_video_list(NewVideoFiles, PrevVideoFales, url):
+    for video_file in NewVideoFiles:
+        file_name = os.path.basename(video_file)
+        video = {"crashvideo": open(video_file, "rb")}
+        response = requests.post(url, files=video)
+        print(f"{file_name} uploaded. Server response: {response.text}")
+
+        # 업로드한 비디오 파일을 이전에 업로드한 비디오 파일 목록에 추가
+        PrevVideoFales.append(file_name)
