@@ -1,31 +1,8 @@
-from dotenv import load_dotenv
 import os
-import mysql.connector
 from videocode import video_func
 
 local = os.path.dirname(__file__)
 dir = os.path.dirname(local)
-
-
-def rds_connect():
-    load_dotenv()
-    # RDS endpoint, username, password, database name 설정
-    ENDPOINT = os.environ.get("endpoint")
-    PORT = os.environ.get("port")
-    USR = os.environ.get("usr")
-    PWD = os.environ.get("pwd")
-    DBNAME = os.environ.get("dbname")
-
-    # RDS에 연결
-    try:
-        conn = mysql.connector.connect(
-            host=ENDPOINT, port=PORT, user=USR, password=PWD, database=DBNAME
-        )
-        print("Connected to RDS successfully!")
-        return conn
-    except Exception as e:
-        print("Unable to connect to RDS.")
-        print(e)
 
 
 def folder_make(mode, NorC, file, bucket):
