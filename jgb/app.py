@@ -5,6 +5,8 @@ from flask_restx import Api, Resource  # Api 구현을 위한 Api 객체 import
 import mysql.connector
 import boto3
 import os
+import urllib.request
+from flask import send_file
 from init import setting
 from videocode import video_func
 from DBcode import DB_func
@@ -14,7 +16,7 @@ projectlocal = os.path.dirname(__file__)
 app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
-conn = setting.rds_connect()  # 이게 된다고?
+conn = DB_func.rds_connect()  # 이게 된다고?
 
 s3c, s3r, strlocal, bucket, bucket_name = video_func.video_init()
 
@@ -45,7 +47,7 @@ class sensorinsert(Resource):
 
 
 @api.route("/sensor/select")
-class select(Resource):
+class sensorselect(Resource):
     def get(self):
         try:
             data = DB_func.sensor_select(conn)
@@ -58,7 +60,7 @@ class select(Resource):
 
 
 @api.route("/normalvideo/select")
-class select(Resource):
+class normalselect(Resource):
     def get(self):
         try:
             data = DB_func.normal_select(conn)
@@ -71,7 +73,7 @@ class select(Resource):
 
 
 @api.route("/crashvideo/select")
-class select(Resource):
+class crashselect(Resource):
     def get(self):
         try:
             data = DB_func.crash_select(conn)
@@ -170,22 +172,34 @@ class crashvideo(Resource):
             return f"Failed to video upload: {error}"
 
 
-@api.route("/normalvideo/download/<strvideodate>")  # 다운로드는 잠정적으로 사용 안함
+@api.route("/normalvideo/download/<strvideodate>")
 class videodown(Resource):
     def get(self, strvideodate):
         url = video_func.generate_presigned_url(
             "normal", bucket_name, "normalvideo/" + strvideodate, strvideodate, s3c
         )
-        return {"url": url}
+        file_name = strvideodate
+        # send_file 함수로 파일 다운로드를 위한 Response 객체 생성
+        response = send_file(urllib.request.urlopen(url), mimetype="video/mp4")
+        # 파일 다운로드를 위한 헤더 설정
+        response.headers["Content-Disposition"] = f"attachment; filename={file_name}"
+
+        return response
 
 
-@api.route("/crashvideo/download/<strvideodate>")  # 다운로드는 잠정적으로 사용 안함
+@api.route("/crashvideo/download/<strvideodate>")
 class videodown(Resource):
     def get(self, strvideodate):
         url = video_func.generate_presigned_url(
-            "crash", bucket_name, "normalvideo/" + strvideodate, strvideodate, s3c
+            "crash", bucket_name, "crashvideo/" + strvideodate, strvideodate, s3c
         )
-        return {"url": url}
+        file_name = strvideodate
+        # send_file 함수로 파일 다운로드를 위한 Response 객체 생성
+        response = send_file(urllib.request.urlopen(url), mimetype="video/mp4")
+        # 파일 다운로드를 위한 헤더 설정
+        response.headers["Content-Disposition"] = f"attachment; filename={file_name}"
+        
+        return response
 
 
 @api.route("/normalvideo/find", methods=["POST"])  # 검색기능 만들기만해둠
@@ -212,6 +226,40 @@ class selectnormal(Resource):
         except mysql.connector.Error as error:  # 원인찾기용도
             print(f"Failed to find video of MySQL table: {error}")
             return f"Failed to find video of MySQL table: {error}"
+
+
+# @api.route("/normalvideo/delete/<strvideodate>")  # 영상제거 s3권한이슈로 보류
+# class videodel(Resource):
+#     def get(self, strvideodate):
+#         object = s3r.Object(bucket_name, "normalvideo/" + strvideodate)
+#         object.delete()
+#         # s3c.delete_object(Bucket=bucket_name, Key="normalvideo/test.mp4")
+
+#         return "video " + strvideodate + " has deleted"
+
+
+@api.route("/eyes/insert", methods=["POST"])
+class eyesinsert(Resource):
+    def post(self):
+        try:
+            strdate, streyesnow = DB_func.eyes_insert(request.get_json(), conn)
+            return {"inserted successfully!": "%s, %s" % (strdate, streyesnow)}
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to insert record into MySQL table: {error}")
+            return f"Failed to insert record into MySQL table: {error}"
+
+
+@api.route("/eyes/select")
+class eyesselect(Resource):
+    def get(self):
+        try:
+            data = DB_func.eyes_select(conn)
+
+            return jsonify(data)
+
+        except mysql.connector.Error as error:  # 원인찾기용도
+            print(f"Failed to select database of MySQL table: {error}")
+            return f"Failed to select database of MySQL table: {error}"
 
 
 if __name__ == "__main__":
