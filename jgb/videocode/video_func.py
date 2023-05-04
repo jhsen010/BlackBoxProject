@@ -1,6 +1,8 @@
 import os
 import boto3
 import subprocess
+import threading
+from flask import request
 
 local = os.path.dirname(__file__)
 dir = os.path.dirname(local)
@@ -27,7 +29,7 @@ def gen(strlocal):
             yield data
 
 
-def incord():
+def incord_thread():
     # 입력 파일 경로
     input_file = dir + "/videostreaming/downloadedvideo.mp4"
 
@@ -39,6 +41,13 @@ def incord():
 
     # ffmpeg 실행
     subprocess.call(command, shell=True)
+
+
+def incord():
+    # 쓰레드 생성
+    t = threading.Thread(target=incord_thread)
+    t.start()
+    
 
 
 def normal_download(bucket, strvideodate):

@@ -7,6 +7,7 @@ import boto3
 import os
 import urllib.request
 from flask import send_file
+
 from init import setting
 from videocode import video_func
 from DBcode import DB_func
@@ -107,7 +108,8 @@ class watchnormal(Resource):
 
         video_func.incord()
 
-        return "http://43.201.154.195:5000/videowatch"
+        # return redirect(url_for("index"))
+        return "Please wait incording for 25 seconds"
 
 
 @api.route("/crashvideo/watch/<strvideodate>")
@@ -198,7 +200,7 @@ class videodown(Resource):
         response = send_file(urllib.request.urlopen(url), mimetype="video/mp4")
         # 파일 다운로드를 위한 헤더 설정
         response.headers["Content-Disposition"] = f"attachment; filename={file_name}"
-        
+
         return response
 
 
