@@ -11,13 +11,15 @@ from flask import send_file
 from init import setting
 from videocode import video_func
 from DBcode import DB_func
+from DBcode.DB_func import Database
 
 projectlocal = os.path.dirname(__file__)
 
 app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
-conn = DB_func.rds_connect()  # 이게 된다고?
+DBset = Database()
+conn = DBset.rds_connect()  # 이게 된다고?
 
 s3c, s3r, strlocal, bucket, bucket_name = video_func.video_init()
 
@@ -35,13 +37,8 @@ def index():
 class sensorinsert(Resource):
     def post(self):
         try:
-            strdate, straccel, strbreak, intspeed = DB_func.sensor_insert(
-                request.get_json(), conn
-            )
-            return {
-                "inserted successfully!": "%s, %s, %s, %d"
-                % (strdate, straccel, strbreak, intspeed)
-            }
+            result = DBset.sensor_insert(request.get_json())
+            return result
         except mysql.connector.Error as error:  # 원인찾기용도
             print(f"Failed to insert record into MySQL table: {error}")
             return f"Failed to insert record into MySQL table: {error}"
@@ -51,7 +48,7 @@ class sensorinsert(Resource):
 class sensorselect(Resource):
     def get(self):
         try:
-            data = DB_func.sensor_select(conn)
+            data = DBset.sensor_select()
 
             return jsonify(data)
 
@@ -64,7 +61,7 @@ class sensorselect(Resource):
 class normalselect(Resource):
     def get(self):
         try:
-            data = DB_func.normal_select(conn)
+            data = DBset.normal_select()
 
             return jsonify(data)
 
@@ -77,7 +74,7 @@ class normalselect(Resource):
 class crashselect(Resource):
     def get(self):
         try:
-            data = DB_func.crash_select(conn)
+            data = DBset.crash_select()
 
             return jsonify(data)
 
@@ -90,13 +87,8 @@ class crashselect(Resource):
 class watchnormal(Resource):
     def get(self, strvideodate):
         try:
-            # data = request.get_json()
-            # strvideodate = data["strvideodate"]
-            # strvideodate = request.form.get("strvideodate")
-            # if strvideodate is None:
-            #     return "input data : None "
             print(strvideodate)
-            DB_func.normal_watch(conn, strvideodate)
+            DBset.normal_watch(strvideodate)
 
         except mysql.connector.Error as error:  # 원인찾기용도
             print(f"Failed to find video at MySQL table: {error}")
@@ -122,7 +114,7 @@ class watchcrash(Resource):
             # if strvideodate is None:
             #     return "input data : None "
             print(strvideodate)
-            DB_func.crash_watch(conn, strvideodate)
+            DBset.crash_watch(strvideodate)
 
         except mysql.connector.Error as error:  # 원인찾기용도
             print(f"Failed to find video at MySQL table: {error}")
@@ -145,7 +137,7 @@ class normalvideo(Resource):
 
             setting.folder_make("up", "normal", file, bucket)
 
-            DB_func.normal_upload_insert(conn, file)
+            DBset.normal_upload_insert(file)
 
             # # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
@@ -164,7 +156,7 @@ class crashvideo(Resource):
 
             setting.folder_make("up", "crash", file, bucket)
 
-            DB_func.crash_upload_insert(conn, file)
+            DBset.crash_upload_insert(file)
 
             # # 파일 업로드 성공시 메시지 반환
             return jsonify({"message": "File upload success"})
@@ -208,7 +200,7 @@ class videodown(Resource):
 class selectnormal(Resource):
     def post(self):
         try:
-            data = DB_func.normal_find(conn, request.get_json())
+            data = DBset.normal_find(request.get_json())
 
             return jsonify(data)
 
@@ -221,7 +213,7 @@ class selectnormal(Resource):
 class selectnormal(Resource):
     def post(self):
         try:
-            data = DB_func.crash_find(conn, request.get_json())
+            data = DBset.crash_find(request.get_json())
 
             return jsonify(data)
 
@@ -244,7 +236,7 @@ class selectnormal(Resource):
 class eyesinsert(Resource):
     def post(self):
         try:
-            strdate, streyesnow = DB_func.eyes_insert(request.get_json(), conn)
+            strdate, streyesnow = DBset.eyes_insert(request.get_json())
             return {"inserted successfully!": "%s, %s" % (strdate, streyesnow)}
         except mysql.connector.Error as error:  # 원인찾기용도
             print(f"Failed to insert record into MySQL table: {error}")
@@ -255,7 +247,7 @@ class eyesinsert(Resource):
 class eyesselect(Resource):
     def get(self):
         try:
-            data = DB_func.eyes_select(conn)
+            data = DBset.eyes_select()
 
             return jsonify(data)
 
