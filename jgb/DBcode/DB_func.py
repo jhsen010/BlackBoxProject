@@ -5,7 +5,7 @@ import os
 load_dotenv()
 
 
-class Database:  ############################################클래스 미완성
+class Database:
     def __init__(self):
         self.ENDPOINT = os.environ.get("endpoint")
         self.PORT = os.environ.get("port")
