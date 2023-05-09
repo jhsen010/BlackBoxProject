@@ -8,10 +8,10 @@ import os
 import urllib.request
 from flask import send_file
 
-from init import setting
 from videocode import video_func
 from DBcode import DB_func
 from DBcode.DB_func import Database
+from videocode.video_func import Videofunc
 
 projectlocal = os.path.dirname(__file__)
 
@@ -19,16 +19,16 @@ app = Flask(__name__, static_folder=projectlocal + "/videostreaming/")
 api = Api(app)  # Flask 객체에 Api 객체 등록
 
 DBset = Database()
+Videoset = Videofunc()
 conn = DBset.rds_connect()  # 이게 된다고?
 
-s3c, s3r, strlocal, bucket, bucket_name = video_func.video_init()
+s3c, s3r, bucket, bucket_name = Videoset.video_init()
 
 
 @app.route("/videowatch")
 def index():
     # 로컬 동영상 경로 설정
     video_path = "streamingvideo.mp4"
-    print(video_path)
     # iFrame으로 동영상 재생
     return render_template("iframe.html", video_path=video_path)
 
@@ -94,11 +94,11 @@ class watchnormal(Resource):
             print(f"Failed to find video at MySQL table: {error}")
             return f"Failed to find video at MySQL table: {error}"
 
-        setting.folder_make("down", "", None, None)
+        Videoset.folder_make("down", "", None)
 
-        video_func.normal_download(bucket, strvideodate)
+        Videoset.normal_download(strvideodate)
 
-        video_func.incord()
+        Videoset.incord()
 
         # return redirect(url_for("index"))
         return "Please wait incording for 25 seconds"
@@ -120,13 +120,14 @@ class watchcrash(Resource):
             print(f"Failed to find video at MySQL table: {error}")
             return f"Failed to find video at MySQL table: {error}"
 
-        setting.folder_make("down", "", None, None)
+        Videoset.folder_make("down", "", None)
 
-        video_func.crash_download(bucket, strvideodate)
+        Videoset.crash_download(strvideodate)
 
-        video_func.incord()
+        Videoset.incord()
 
-        return "http://43.201.154.195:5000/videowatch"
+        # return redirect(url_for("index"))
+        return "Please wait incording for 25 seconds"
 
 
 @api.route("/normalvideo/upload")
@@ -135,7 +136,7 @@ class normalvideo(Resource):
         try:
             file = request.files["normalvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
 
-            setting.folder_make("up", "normal", file, bucket)
+            Videoset.folder_make("up", "normal", file)
 
             DBset.normal_upload_insert(file)
 
@@ -154,7 +155,7 @@ class crashvideo(Resource):
             # 업로드된 파일 ec2에 저장
             file = request.files["crashvideo"]  # 'file'은 업로드된 파일의 key 값입니다.
 
-            setting.folder_make("up", "crash", file, bucket)
+            Videoset.folder_make("up", "crash", file)
 
             DBset.crash_upload_insert(file)
 
@@ -169,8 +170,8 @@ class crashvideo(Resource):
 @api.route("/normalvideo/download/<strvideodate>")
 class videodown(Resource):
     def get(self, strvideodate):
-        url = video_func.generate_presigned_url(
-            "normal", bucket_name, "normalvideo/" + strvideodate, strvideodate, s3c
+        url = Videoset.generate_presigned_url(
+            "normal", "normalvideo/" + strvideodate, strvideodate
         )
         file_name = strvideodate
         # send_file 함수로 파일 다운로드를 위한 Response 객체 생성
@@ -184,8 +185,8 @@ class videodown(Resource):
 @api.route("/crashvideo/download/<strvideodate>")
 class videodown(Resource):
     def get(self, strvideodate):
-        url = video_func.generate_presigned_url(
-            "crash", bucket_name, "crashvideo/" + strvideodate, strvideodate, s3c
+        url = Videoset.generate_presigned_url(
+            "crash", "crashvideo/" + strvideodate, strvideodate
         )
         file_name = strvideodate
         # send_file 함수로 파일 다운로드를 위한 Response 객체 생성
