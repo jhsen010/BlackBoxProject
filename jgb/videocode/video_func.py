@@ -4,6 +4,7 @@ import subprocess
 import threading
 from flask import request
 
+
 class Videofunc:
     def __init__(self):
         self.local = os.path.dirname(__file__)
@@ -19,24 +20,24 @@ class Videofunc:
 
     def folder_make(self, mode, NorC, file):
         if mode == "down":
-            if not os.path.exists(dir + "/videostreaming"):  # 없으면 만들어
-                os.makedirs(dir + "/videostreaming")
-            for file_name in os.listdir(dir + "/videostreaming"):
-                file_path = os.path.join(dir + "/videostreaming", file_name)
+            if not os.path.exists(self.dir + "/videostreaming"):  # 없으면 만들어
+                os.makedirs(self.dir + "/videostreaming")
+            for file_name in os.listdir(self.dir + "/videostreaming"):
+                file_path = os.path.join(self.dir + "/videostreaming", file_name)
                 if os.path.isfile(file_path):
                     os.remove(file_path)  # 파일 삭제
 
         elif mode == "up":
-            if not os.path.exists(dir + "/videoupload"):  # 없으면 만들어
-                os.makedirs(dir + "/videoupload")
-            file.save(dir + "/videoupload/" + file.filename)
+            if not os.path.exists(self.dir + "/videoupload"):  # 없으면 만들어
+                os.makedirs(self.dir + "/videoupload")
+            file.save(self.dir + "/videoupload/" + file.filename)
 
             if NorC == "normal":
                 self.normal_upload(file)
             elif NorC == "crash":
                 self.crash_upload(file)
 
-            file_path = dir + "/videoupload/" + file.filename
+            file_path = self.dir + "/videoupload/" + file.filename
             os.remove(file_path)
 
     def incord_thread(self):
@@ -54,7 +55,7 @@ class Videofunc:
 
     def incord(self):
         # 쓰레드 생성
-        t = threading.Thread(target=self.incord_thread)
+        t = threading.Thread(target=self.incord_thread())
         t.start()
 
     def normal_download(self, strvideodate):
