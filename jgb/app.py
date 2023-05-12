@@ -7,6 +7,7 @@ import boto3
 import os
 import urllib.request
 from flask import send_file
+from flask import redirect, url_for
 
 from videocode import video_func
 from DBcode import DB_func
@@ -20,13 +21,12 @@ api = Api(app)  # Flask 객체에 Api 객체 등록
 
 DBset = Database()
 Videoset = Videofunc()
-conn = DBset.rds_connect()  # 이게 된다고?
 
 s3c, s3r, bucket, bucket_name = Videoset.video_init()
 
 
 @app.route("/videowatch")
-def index():
+def videowatch():
     # 로컬 동영상 경로 설정
     video_path = "streamingvideo.mp4"
     # iFrame으로 동영상 재생
@@ -100,19 +100,14 @@ class watchnormal(Resource):
 
         Videoset.incord()
 
-        # return redirect(url_for("index"))
-        return "Please wait incording for 25 seconds"
+        return redirect(url_for("videowatch"))
+        # return "Please wait incording for 25 seconds"
 
 
 @api.route("/crashvideo/watch/<strvideodate>")
 class watchcrash(Resource):
     def get(self, strvideodate):
         try:
-            # data = request.get_json()
-            # strvideodate = data["strvideodate"]
-            # strvideodate = request.form.get("strvideodate")
-            # if strvideodate is None:
-            #     return "input data : None "
             print(strvideodate)
             DBset.crash_watch(strvideodate)
 
@@ -126,8 +121,8 @@ class watchcrash(Resource):
 
         Videoset.incord()
 
-        # return redirect(url_for("index"))
-        return "Please wait incording for 25 seconds"
+        return redirect(url_for("videowatch"))
+        # return "Please wait incording for 25 seconds"
 
 
 @api.route("/normalvideo/upload")

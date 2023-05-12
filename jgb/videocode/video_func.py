@@ -55,7 +55,9 @@ class Videofunc:
 
     def incord(self):
         # 쓰레드 생성
-        t = threading.Thread(target=self.incord_thread())
+        t = threading.Thread(
+            target=self.incord_thread
+        )  # target=self.incord_thread 여기다 () 달아버리면 쓰레드 정상 작동 안됨
         t.start()
 
     def normal_download(self, strvideodate):
