@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import mysql.connector
 import os
+import threading
 
 load_dotenv()
 
@@ -19,22 +20,31 @@ class Database:
             password=self.PWD,
             database=self.DBNAME,
         )
+        self.local = threading.local()
 
-    def rds_connect(self):
-        # RDS에 연결
-        try:
-            print("Connected to RDS successfully!")
-            return self.conn
-        except Exception as e:
-            print("Unable to connect to RDS.")
-            print(e)
+    def _get_conn(self):  # sensor insert 받아오기 쓰레드화 하기 위해 개별 conn 생성
+        if not hasattr(self.local, "conn"):
+            self.local.conn = mysql.connector.connect(
+                host=self.ENDPOINT,
+                port=self.PORT,
+                user=self.USR,
+                password=self.PWD,
+                database=self.DBNAME,
+            )
+        return self.local.conn
+
+    def _get_cursor(self):  # sensor insert 받아오기 쓰레드화 하기 위해 개별 conn 생성
+        if not hasattr(self.local, "cursor"):
+            self.local.cursor = self._get_conn().cursor()
+        return self.local.cursor
 
     def sensor_insert(self, data):
         strdate = data["strdate"]
         straccel = data["straccel"]
         strbreak = data["strbreak"]
         intspeed = data["intspeed"]
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute(
             "INSERT INTO sensor (date, accel, break, speed) VALUES ('%s', '%s', '%s', %d)"
             % (strdate, straccel, strbreak, intspeed)
@@ -42,14 +52,16 @@ class Database:
         cursor.execute("ALTER TABLE sensor AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
         cursor.execute("SET @COUNT = 0;")
         cursor.execute("UPDATE sensor SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
-        self.conn.commit()
+        # self.conn.commit()
+        self._get_conn().commit()
         return {
             "inserted successfully!": "%s, %s, %s, %d"
             % (strdate, straccel, strbreak, intspeed)
         }
 
     def sensor_select(self):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute("ALTER TABLE sensor AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
         cursor.execute("SET @COUNT = 0;")
         cursor.execute("UPDATE sensor SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기

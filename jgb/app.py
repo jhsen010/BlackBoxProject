@@ -21,7 +21,6 @@ api = Api(app)  # Flask 객체에 Api 객체 등록
 
 DBset = Database()
 Videoset = Videofunc()
-conn = DBset.rds_connect()  # 이게 된다고?
 
 s3c, s3r, bucket, bucket_name = Videoset.video_init()
 
