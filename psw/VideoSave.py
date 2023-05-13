@@ -2,7 +2,7 @@ import cv2
 import os
 import time
 import datetime
-import requests
+
 
 while 1:
     # 캠을 켭니다.
