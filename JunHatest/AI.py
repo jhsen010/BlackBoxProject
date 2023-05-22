@@ -40,7 +40,7 @@ while cap.isOpened():
 
     prediction = output[0][0]
     result = 0
-    if prediction >= 0.45:
+    if prediction >= 0.5:
         result = 1
     else:
         result = 0
