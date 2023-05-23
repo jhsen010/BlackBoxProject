@@ -6,16 +6,19 @@ import requests
 import json
 import datetime
 
+
 now = datetime.datetime.now()
-timestamp_str = now.strftime("%Y%m%d_%H%M%S")
-url = "http://43.201.154.195:5000/eyes/insert"
+timestamp_str = now.strftime("%Y%m%d_%H%M%S")  # DB이름
+url = "http://43.201.154.195:5000/eyes/insert"  # api서버 url
 
-
+# lite 모델 가져오기
 model = "/home/BlackBoxProject/JunHatest/final.tflite"
-interpreter = tflite.Interpreter(model_path=model)
-interpreter.allocate_tensors()
+interpreter = tflite.Interpreter(model_path=model)  # TFlite model을 memory에 올림
+interpreter.allocate_tensors()  # tensor initailization = 텐서 초기화
 
-input_details = interpreter.get_input_details()
+input_details = (
+    interpreter.get_input_details()
+)  # input에 대한 다양한 정보 호출(index, input.shape ,data type)
 output_details = interpreter.get_output_details()
 
 
@@ -25,18 +28,21 @@ while cap.isOpened():
     if not ret:
         print("카메라카 켜지지않음")
         break
+
+    # frame 을 모델 input 형태로 변환
     resized = cv2.resize(
         frame, (input_details[0]["shape"][2], input_details[0]["shape"][1])
     )
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    img = np.expand_dims(gray, axis=2)
-    img = np.expand_dims(img, axis=0)
+    img = np.expand_dims(gray, axis=2)  # (x,y,1)
+    img = np.expand_dims(img, axis=0)  # (1,x,y,1)
     img = img.astype("float32") / 255.0
 
-    # Run inference on the preprocessed image
-    interpreter.set_tensor(input_details[0]["index"], img)
-    interpreter.invoke()
-    output = interpreter.get_tensor(output_details[0]["index"])
+    interpreter.set_tensor(
+        input_details[0]["index"], img
+    )  # TFlite model이 예측 가능하도록 image를 input layer의 위치(index)에 넣어주어 처리
+    interpreter.invoke()  # TFLite 모델에서 추론 프로세스를 실행하여 출력 텐서를 생성.
+    output = interpreter.get_tensor(output_details[0]["index"])  # 출력 텐서
 
     prediction = output[0][0]
     result = 0
@@ -45,7 +51,6 @@ while cap.isOpened():
     else:
         result = 0
 
-    # Display the frame and prediction
     # cv2.imshow("frame", frame)
     print("Prediction:", result)
     data = {
@@ -54,10 +59,11 @@ while cap.isOpened():
     }
     headers = {"Content-type": "application/json"}
     data_json = json.dumps(data)
-    response = requests.post(url, data=data_json, headers=headers)
+    response = requests.post(
+        url, data=data_json, headers=headers
+    )  # 원격 서버에 예측과 함께 요청을 보냄
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
-        # Release the camera and close all windows
         cap.release()
         cv2.destroyAllWindows()
         break
