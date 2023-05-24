@@ -1,5 +1,6 @@
 package org.example.Project
 
+import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -16,6 +17,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import org.example.Project.*
+import retrofit2.converter.scalars.ScalarsConverterFactory
 
 
 class SubActivity2 : AppCompatActivity() {
@@ -193,4 +195,6 @@ class SubActivity2 : AppCompatActivity() {
         }
 
     }
+
+
 }

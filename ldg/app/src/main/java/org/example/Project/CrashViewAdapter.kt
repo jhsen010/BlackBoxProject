@@ -23,6 +23,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.example.Project.VideoViewApi
 import org.json.JSONObject
 import retrofit2.Call
@@ -52,139 +54,71 @@ class CrashViewAdapter(var crashLists: ArrayList<CrashDataEntity>, var con: Cont
         var tv_videodate: TextView
 
 
-
         init {
             tv_id = itemView.findViewById(R.id.txt_id)
             tv_videodate = itemView.findViewById(R.id.txt_videodate)
 
-/*fun saveVideoToGallery(videoUrl: String) {
-                GlobalScope.launch {
-                    val retrofit = Retrofit.Builder()
-                        .baseUrl(CrashViewApi.DOMAIN)
-                        .addConverterFactory(ScalarsConverterFactory.create())
-                        .build()
-                    val api = retrofit.create(Api::class.java)
-
-                    val call = api.getVideoUrl("/crashvideo/download/$videoUrl")
-                    try {
-                        val response = call.execute()
-                        if (response.isSuccessful) {
-                            val jsonString = response.body()
-                            val jsonObject = JSONObject(jsonString)
-                            val videoUrl = jsonObject.getString("url")
-                            val fileName = UUID.randomUUID().toString() + ".mp4"
-                            val url = URL(videoUrl)
-                            val connection = url.openConnection()
-                            connection.connect()
-
-                            // Get file length and type
-                            val contentLength = connection.contentLength
-                            val contentType = connection.contentType ?: "application/octet-stream"
-
-                            // Create output stream
-                            val resolver = con.contentResolver
-                            val contentValues = ContentValues().apply {
-                                put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
-                                put(MediaStore.Video.Media.MIME_TYPE, contentType)
-                                put(MediaStore.Video.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/Project_Crash_Video")
-                            }
-                            val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
-                            uri?.let {
-                                resolver.openOutputStream(it)?.use { outputStream ->
-                                    connection.getInputStream().use { inputStream ->
-                                        inputStream.copyTo(outputStream)
-                                    }
-                                }
-                            }
-
-                            Log.i("API_CALL", "$fileName downloaded and saved to gallery")
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(con, "$fileName 다운로드 완료", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Log.e("API_CALL", "Failed to request video URL")
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(con, "요청실패", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } catch (e: IOException) {
-                        Log.e("API_CALL", "Failed to request video URL", e)
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(con, "다운로드 실패", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            }*/
-            fun saveVideoToGallery(videoUrl: String) {
-                GlobalScope.launch {
-                    val retrofit = Retrofit.Builder()
-                        .baseUrl(CrashViewApi.DOMAIN)
-                        .addConverterFactory(ScalarsConverterFactory.create())
-                        .build()
-                    val api = retrofit.create(Api::class.java)
-
-                    val call = api.getVideoUrl("/normalvideo/download/$videoUrl")
-
-                    try {
-                        val response = call.execute()
-                        if (response.isSuccessful) {
-                            val jsonString = response.body()
-                            val jsonObject = JSONObject(jsonString)
-                            val videoUrl = jsonObject.getString("url")
-                            val fileName = UUID.randomUUID().toString() + ".mp4"
-                            val url = URL(videoUrl)
-                            val connection = url.openConnection()
-                            connection.connect()
-
-                            // Get file length and type
-                            val contentLength = connection.contentLength
-                            val contentType = connection.contentType ?: "application/octet-stream"
-
-                            // Create output stream
-                            val resolver = con.contentResolver
-                            val contentValues = ContentValues().apply {
-                                put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
-                                put(MediaStore.Video.Media.MIME_TYPE, contentType)
-                                put(MediaStore.Video.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/Project_Crash_Video")
-                            }
-                            val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
-                            uri?.let {
-                                resolver.openOutputStream(it)?.use { outputStream ->
-                                    connection.getInputStream().use { inputStream ->
-                                        inputStream.copyTo(outputStream)
-                                    }
-                                }
-                            }
-
-                            Log.i("API_CALL", "$fileName downloaded and saved to gallery")
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(con, "$fileName 다운로드 완료", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Log.e("API_CALL", "Failed to request video URL")
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(con, "요청실패", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } catch (e: IOException) {
-                        Log.e("API_CALL", "Failed to request video URL", e)
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(con, "다운로드 실패", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            }
-
             itemView.setOnClickListener {
                 AlertDialog.Builder(con).apply {
                     val position = adapterPosition
-                    val crashvideolist = filteredcrashLists[position]
-                    setTitle("번호 : ${crashvideolist.ID}")
-                    setMessage("제목 : ${crashvideolist.videodate}")
+                    val crashlist = filteredcrashLists[position]
+                    setTitle("번호: ${crashlist.ID}")
+                    setMessage("제목: ${crashlist.videodate}")
                     setPositiveButton("OK") { dialog, which ->
-                        saveVideoToGallery(crashvideolist.videodate)
+                        Toast.makeText(con, "OK Button Click", Toast.LENGTH_SHORT).show()
+                        saveVideoToGallery(crashlist.videodate)
                     }
                     show()
+                }
+            }
+        }
+
+        private fun saveVideoToGallery(videoUrl: String) {
+            GlobalScope.launch {
+                try {
+                    val baseUrl = CrashViewApi.DOMAIN
+                    val apiUrl = "/crashvideo/download/$videoUrl"
+                    val downloadUrl = "${baseUrl.trimEnd('/')}$apiUrl"
+
+                    val request = Request.Builder()
+                        .url(downloadUrl)
+                        .build()
+
+                    val response = OkHttpClient().newCall(request).execute()
+
+                    if (response.isSuccessful) {
+                        val crashData = response.body?.byteStream()
+                        val crashlist = filteredcrashLists[adapterPosition]
+                        val fileName = crashlist.videodate
+                        val resolver = con.contentResolver
+                        val contentValues = ContentValues().apply {
+                            put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                            put(
+                                MediaStore.Video.Media.RELATIVE_PATH,
+                                "${Environment.DIRECTORY_PICTURES}/project_crash_video"
+                            )
+                        }
+                        val uri = resolver.insert(
+                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                            contentValues
+                        )
+                        uri?.let {
+                            resolver.openOutputStream(it)?.use { outputStream ->
+                                crashData?.let { inputStream ->
+                                    inputStream.copyTo(outputStream)
+                                }
+                            }
+                        }
+
+                        con.runOnUiThread {
+                            Log.i("API_CALL", "$fileName downloaded and saved to gallery")
+                            Toast.makeText(con, "$fileName 다운로드 완료", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                } catch (e: Exception) {
+
                 }
             }
         }

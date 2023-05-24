@@ -1,15 +1,18 @@
 package org.example.Project
-// GitHub
-// 구현 x
+// Project
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,35 +20,25 @@ import android.widget.Filter
 import android.widget.Filterable
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonObject
-import kotlinx.coroutines.*
-import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Url
-import java.io.BufferedInputStream
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.MalformedURLException
-import java.net.URL
 import java.util.*
 import kotlin.collections.ArrayList
 
-val String.url: String?
-    get() {
-        return try {
-            URL(this).toString()
-        } catch (e: MalformedURLException) {
-            null
-        }
-    }
 
 class VideoViewAdapter(var videoLists: ArrayList<VideoDataEntity>, var con: Context) :
     RecyclerView.Adapter<VideoViewAdapter.ViewHolder>(), Filterable {
@@ -64,57 +57,68 @@ class VideoViewAdapter(var videoLists: ArrayList<VideoDataEntity>, var con: Cont
             tv_id = itemView.findViewById(R.id.txt_id)
             tv_videodate = itemView.findViewById(R.id.txt_videodate)
 
-            fun saveVideoToGallery(videoUrl: String) {
-                GlobalScope.launch {
-                    val url = URL(videoUrl)
-                    val connection = url.openConnection()
-                    connection.connect()
-
-                    // Get file name, length, and type
-                    val fileName = UUID.randomUUID().toString() + ".mp4"
-                    val contentLength = connection.contentLength
-                    val contentType = connection.contentType ?: "application/octet-stream"
-
-                    // Create output stream
-                    val resolver = con.contentResolver
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
-                        put(MediaStore.Video.Media.MIME_TYPE, contentType)
-                        put(
-                            MediaStore.Video.Media.RELATIVE_PATH,
-                            "${Environment.DIRECTORY_PICTURES}/Project_Video"
-                        )
-                    }
-                    val uri = resolver.insert(
-                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                        contentValues
-                    )
-
-                    uri?.let {
-                        resolver.openOutputStream(it)?.use { outputStream ->
-                            connection.getInputStream().use { inputStream ->
-                                inputStream.copyTo(outputStream)
-                            }
-                        }
-                    }
-
-                    Log.i("API_CALL", "$fileName downloaded and saved to gallery")
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(con, "$fileName 다운로드 완료", Toast.LENGTH_SHORT).show()
-                    }
-
-                }
-            }
             itemView.setOnClickListener {
                 AlertDialog.Builder(con).apply {
                     val position = adapterPosition
                     val videolist = filteredvideoLists[position]
-                    setTitle("번호 : ${videolist.ID}")
-                    setMessage("제목 : ${videolist.videodate}")
+                    setTitle("번호: ${videolist.ID}")
+                    setMessage("제목: ${videolist.videodate}")
                     setPositiveButton("OK") { dialog, which ->
+                        Toast.makeText(con, "OK Button Click", Toast.LENGTH_SHORT).show()
                         saveVideoToGallery(videolist.videodate)
                     }
                     show()
+                }
+            }
+        }
+
+        private fun saveVideoToGallery(videoUrl: String) {
+            GlobalScope.launch {
+                try {
+                    val baseUrl = VideoViewApi.DOMAIN
+                    val apiUrl = "/normalvideo/download/$videoUrl"
+                    val downloadUrl = "${baseUrl.trimEnd('/')}$apiUrl"
+
+                    val request = Request.Builder()
+                        .url(downloadUrl)
+                        .build()
+
+                    val response = OkHttpClient().newCall(request).execute()
+
+                    if (response.isSuccessful) {
+                        val videoData = response.body?.byteStream()
+                        val videolist = filteredvideoLists[adapterPosition]
+                        val fileName = videolist.videodate
+                        val resolver = con.contentResolver
+                        val contentValues = ContentValues().apply {
+                            put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                            put(
+                                MediaStore.Video.Media.RELATIVE_PATH,
+                                "${Environment.DIRECTORY_PICTURES}/project_video"
+                            )
+                        }
+                        val uri = resolver.insert(
+                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                            contentValues
+                        )
+                        uri?.let {
+                            resolver.openOutputStream(it)?.use { outputStream ->
+                                videoData?.let { inputStream ->
+                                    inputStream.copyTo(outputStream)
+                                }
+                            }
+                        }
+
+                        con.runOnUiThread {
+                            Log.i("API_CALL", "$fileName downloaded and saved to gallery")
+                            Toast.makeText(con, "$fileName 다운로드 완료", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+
+                } catch (e: Exception) {
+
                 }
             }
         }
@@ -276,6 +280,11 @@ class VideoViewAdapter(var videoLists: ArrayList<VideoDataEntity>, var con: Cont
     }
 }
 
-private fun String?.string(): String {
-    return this ?: ""
+fun Any.runOnUiThread(function: () -> Unit) {
+    if (this is Context) {
+        val handler = Handler(Looper.getMainLooper())
+        handler.post { function.invoke() }
+    } else if (this is Activity) {
+        runOnUiThread(function)
+    }
 }

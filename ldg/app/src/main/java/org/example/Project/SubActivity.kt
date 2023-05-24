@@ -60,7 +60,10 @@ class SubActivity : AppCompatActivity() {
         val layoutManager = LinearLayoutManager(baseContext)
         recyclerView.layoutManager = layoutManager
 
-
+        runOnUiThread {
+            viewAdapter.setList(logLists)
+            viewAdapter.notifyDataSetChanged()
+        }
         GlobalScope.launch(Dispatchers.Main) { // UI 스레드에서 실행
             viewAdapter.setList(logLists)
             viewAdapter.notifyDataSetChanged()
