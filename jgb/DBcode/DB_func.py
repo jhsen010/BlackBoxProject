@@ -81,7 +81,8 @@ class Database:
         return data
 
     def normal_select(self):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute("ALTER TABLE camera_normal AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
         cursor.execute("SET @COUNT = 0;")
         cursor.execute("UPDATE camera_normal SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
@@ -98,7 +99,8 @@ class Database:
         return data
 
     def crash_select(self):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute("ALTER TABLE camera_crash AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
         cursor.execute("SET @COUNT = 0;")
         cursor.execute("UPDATE camera_crash SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
@@ -115,7 +117,8 @@ class Database:
         return data
 
     def normal_watch(self, strvideodate):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute(
             "SELECT ID, videodate FROM camera_normal WHERE videodate = '%s'"
             % strvideodate
@@ -123,7 +126,8 @@ class Database:
         bufferclean = cursor.fetchall()
 
     def crash_watch(self, strvideodate):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute(
             "SELECT ID, videodate FROM camera_crash WHERE videodate = '%s'"
             % strvideodate
@@ -131,7 +135,8 @@ class Database:
         bufferclean = cursor.fetchall()
 
     def normal_upload_insert(self, file):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute(
             "INSERT INTO camera_normal (videodate) VALUES ('%s')" % file.filename
         )
@@ -141,7 +146,8 @@ class Database:
         self.conn.commit()
 
     def crash_upload_insert(self, file):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute(
             "INSERT INTO camera_crash (videodate) VALUES ('%s')" % file.filename
         )
@@ -152,7 +158,8 @@ class Database:
 
     def normal_find(self, data):
         strvideodate = data["strvideodate"]
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         findword = "%" + strvideodate + "%"
         cursor.execute(
             "SELECT ID, videodate FROM camera_normal WHERE videodate like  '%s'"
@@ -171,7 +178,8 @@ class Database:
 
     def crash_find(self, data):
         strvideodate = data["strvideodate"]
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         findword = "%" + strvideodate + "%"
         cursor.execute(
             "SELECT ID, videodate FROM camera_crash WHERE videodate like  '%s'"
@@ -191,7 +199,8 @@ class Database:
     def eyes_insert(self, data):
         strdate = data["strdate"]
         streyesnow = data["streyesnow"]
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute(
             "INSERT INTO eyesnow (date, eyesnow) VALUES ('%s', '%s')"
             % (strdate, streyesnow)
@@ -203,7 +212,8 @@ class Database:
         return strdate, streyesnow
 
     def eyes_select(self):
-        cursor = self.conn.cursor()
+        # cursor = self.conn.cursor()
+        cursor = self._get_cursor()
         cursor.execute("ALTER TABLE eyesnow AUTO_INCREMENT=1;")  # ID순서 꼬인거 풀기
         cursor.execute("SET @COUNT = 0;")
         cursor.execute("UPDATE eyesnow SET ID = @COUNT:=@COUNT+1")  # ID순서 꼬인거 풀기
