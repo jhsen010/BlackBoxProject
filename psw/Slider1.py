@@ -117,8 +117,8 @@ try:
         break_value = readadc(break_channel)
         axel_v = (axel_value / 1023) * 100
         break_v = (break_value / 1023) * 100
-        # print("------------------------")
-        # print(f"axel_Value: {axel_v}%    break_Value: {break_v}%")
+        print("------------------------")
+        print(f"axel_Value: {axel_v}%    break_Value: {break_v}%")
 
         change_motor_speed(axel_value, break_value)
 
@@ -129,7 +129,7 @@ try:
         # elapsedTime에 360.0을 곱해주어 초를 분으로 변환
         rpm = deltaEncoder / (elapsedTime * 360.0) * 60
         hour = rpm / 2
-        # print(f"RPM: {abs(rpm)}  시속:{abs(hour)}")
+        print(f"RPM: {abs(rpm)}  시속:{abs(hour)}")
 
         # 이전 측정 시간과 이전 엔코더 위치를 저장해 둠으로써
         # 다음 측정 시간에서 현재 측정된 시간과 엔코더 위치의 차이를

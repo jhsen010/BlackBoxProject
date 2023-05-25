@@ -36,9 +36,11 @@ while 1:
             logging.error("Failed to send data for row: %s", row)
 
     if success:
+        print("send success")
         # delete all data in the database
         cur.execute("DELETE FROM sensordata;")
         conn.commit()
+
     else:
         logging.warning(
             "Data transmission failed, no data was deleted from the database."
